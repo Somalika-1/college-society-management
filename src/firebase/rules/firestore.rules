@@ -1,0 +1,64 @@
+// firebase/rules/firestore.rules
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helper functions
+    function isAuth() {
+      return request.auth != null;
+    }
+    
+    function isAdmin() {
+      return isAuth() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+    
+    function isSocietyHead() {
+      return isAuth() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'society_head';
+    }
+    
+    function isSocietyMember(societyId) {
+      return isAuth() && 
+        get(/databases/$(database)/documents/societies/$(societyId)).data.members.hasAny([request.auth.uid]);
+    }
+    
+    function isOwner() {
+      return isAuth() && request.auth.uid == resource.data.userId;
+    }
+
+    // Users collection
+    match /users/{userId} {
+      allow read: if isAuth();
+      allow create: if isAuth();
+      allow update: if isAdmin() || request.auth.uid == userId;
+      allow delete: if isAdmin();
+    }
+
+    // Societies collection
+    match /societies/{societyId} {
+      allow read: if true;
+      allow create: if isAdmin();
+      allow update: if isAdmin() || 
+        (isSocietyHead() && resource.data.headId == request.auth.uid);
+      allow delete: if isAdmin();
+    }
+
+    // Events collection
+    match /events/{eventId} {
+      allow read: if true;
+      allow create: if isAdmin() || isSocietyHead();
+      allow update: if isAdmin() || 
+        (isSocietyHead() && resource.data.societyId == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.societyId);
+      allow delete: if isAdmin() || 
+        (isSocietyHead() && resource.data.societyId == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.societyId);
+    }
+
+    // Announcements collection
+    match /announcements/{announcementId} {
+      allow read: if true;
+      allow create: if isAdmin() || isSocietyHead();
+      allow update: if isAdmin() || 
+        (isSocietyHead() && resource.data.societyId == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.societyId);
+      allow delete: if isAdmin() || 
+        (isSocietyHead() && resource.data.societyId == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.societyId);
+    }
+  }
+}

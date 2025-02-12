@@ -7,15 +7,15 @@
     "strict": true,
     "noEmit": true,
     "esModuleInterop": true,
-    "module": "esnext",
-    "moduleResolution": "bundler",
+    "module": "commonjs",  // Changed this
+    "moduleResolution": "node",  // Changed this
     "resolveJsonModule": true,
     "isolatedModules": true,
     "jsx": "preserve",
     "incremental": true,
     "baseUrl": "./",  // ✅ Add this to fix path alias issue
     "paths": {
-      "@/*": ["./src/*"]  // ✅ Ensure paths point to `src`
+      "@/*": ["./src/*"]  
     },
     "plugins": [
       {
@@ -23,6 +23,7 @@
       }
     ]
   },
-  "include": ["next-env.d.ts", "src/**/*", ".next/types/**/*.ts"],  // ✅ Include src properly
+  "include": ["next-env.d.ts", "src/**/*", ".next/types/**/*.ts",
+  "scripts/**/*"],  
   "exclude": ["node_modules"]
 }
