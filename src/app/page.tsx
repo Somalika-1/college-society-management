@@ -1,6 +1,7 @@
 "use client";
 import React from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Users, Calendar, Bell } from "lucide-react";
 import Navbar from "@/components/common/Navbar";
 import { Card } from "@/components/common/Card";
@@ -13,6 +14,7 @@ import { useEvents } from "@/hooks/useEvents";
 import { useSocieties } from "@/hooks/useSocieties";
 
 export default function LandingPage() {
+  const router = useRouter();
   const { announcements, loading: announcementsLoading } = useAnnouncements();
   const { events, loading: eventsLoading } = useEvents();
   const { societies, loading: societiesLoading } = useSocieties();
@@ -24,6 +26,15 @@ export default function LandingPage() {
   // Get upcoming events
   const upcomingEvents =
     events?.filter((event) => new Date(event.date) > new Date()) || [];
+
+  const handleSignUp = () => {
+    router.push("/auth/register");
+  };
+
+  const handleEventRegistration = (eventId: string) => {
+    // If user is not logged in, redirect to login
+    router.push(`/events/${eventId}/register`);
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -110,12 +121,15 @@ export default function LandingPage() {
               .map((event) => (
                 <EventCard
                   key={event.id}
+                  id={event.id}
                   title={event.title}
                   description={event.description}
                   date={new Date(event.date)}
                   venue={event.venue}
-                  registeredParticipants={event.registeredParticipants.length}
+                  societyId={event.societyId}
+                  registeredParticipants={event.registeredParticipants || []}
                   maxParticipants={event.maxParticipants}
+                  onRegister={() => handleEventRegistration(event.id)}
                 />
               ))
           )}
@@ -136,16 +150,18 @@ export default function LandingPage() {
           {societiesLoading ? (
             <Card>Loading societies...</Card>
           ) : (
-            societies?.slice(0, 3).map((society) => (
-              <SocietyCard
-                key={society.id}
-                name={society.name}
-                description={society.description}
-                memberCount={society.members.length}
-                tags={["Active"]} // You might want to add more dynamic tags based on society data
-                onViewDetails={() => {}} // Add navigation handler if needed
-              />
-            ))
+            societies
+              ?.slice(0, 3)
+              .map((society) => (
+                <SocietyCard
+                  key={society.id}
+                  name={society.name}
+                  description={society.description}
+                  memberCount={society.members.length}
+                  tags={["Active"]}
+                  onViewDetails={() => router.push(`/societies/${society.id}`)}
+                />
+              ))
           )}
         </div>
         <div className="text-center mt-8">
@@ -164,9 +180,9 @@ export default function LandingPage() {
           <p className="text-lg text-blue-100 mb-8">
             Register now to participate in events and join societies!
           </p>
-          <Link href="/auth/register">
-            <Button variant="secondary">Sign Up Now</Button>
-          </Link>
+          <Button variant="secondary" onClick={handleSignUp}>
+            Sign Up Now
+          </Button>
         </div>
       </section>
     </div>
