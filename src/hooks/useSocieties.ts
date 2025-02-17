@@ -9,13 +9,11 @@ import {
   deleteSociety 
 } from '@/firebase/services/societies';
 import { Society } from '@/types';
-// import { useToast } from '@/components/ui/use-toast';
 
 export function useSocieties() {
   const [societies, setSocieties] = useState<Society[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-//   const { toast } = useToast();
 
   useEffect(() => {
     fetchSocieties();
@@ -29,11 +27,7 @@ export function useSocieties() {
       setError(null);
     } catch (err) {
       setError('Failed to fetch societies');
-      alert({
-        title: 'Error',
-        description: 'Failed to fetch societies',
-        variant: 'destructive',
-      });
+      console.error(err);
     } finally {
       setLoading(false);
     }
@@ -47,11 +41,7 @@ export function useSocieties() {
       return society;
     } catch (err) {
       setError('Failed to fetch society');
-      alert({
-        title: 'Error',
-        description: 'Failed to fetch society details',
-        variant: 'destructive',
-      });
+      console.error(err);
       return null;
     } finally {
       setLoading(false);
@@ -63,18 +53,11 @@ export function useSocieties() {
       setLoading(true);
       const newSociety = await createSociety(societyData);
       setSocieties(prev => [...prev, newSociety]);
-      alert({
-        title: 'Success',
-        description: 'Society created successfully',
-      });
+      setError(null);
       return newSociety;
     } catch (err) {
       setError('Failed to create society');
-      alert({
-        title: 'Error',
-        description: 'Failed to create society',
-        variant: 'destructive',
-      });
+      console.error(err);
       return null;
     } finally {
       setLoading(false);
@@ -90,18 +73,11 @@ export function useSocieties() {
           society.id === id ? { ...society, ...data } : society
         )
       );
-      alert({
-        title: 'Success',
-        description: 'Society updated successfully',
-      });
+      setError(null);
       return updatedSociety;
     } catch (err) {
       setError('Failed to update society');
-      alert({
-        title: 'Error',
-        description: 'Failed to update society',
-        variant: 'destructive',
-      });
+      console.error(err);
       return null;
     } finally {
       setLoading(false);
@@ -113,18 +89,11 @@ export function useSocieties() {
       setLoading(true);
       await deleteSociety(id);
       setSocieties(prev => prev.filter(society => society.id !== id));
-      alert({
-        title: 'Success',
-        description: 'Society deleted successfully',
-      });
+      setError(null);
       return true;
     } catch (err) {
       setError('Failed to delete society');
-      alert({
-        title: 'Error',
-        description: 'Failed to delete society',
-        variant: 'destructive',
-      });
+      console.error(err);
       return false;
     } finally {
       setLoading(false);

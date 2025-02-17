@@ -1,4 +1,3 @@
-
 // src/hooks/useAnnouncements.ts
 "use client"
 import { useState, useEffect } from 'react';
@@ -8,13 +7,11 @@ import {
   deleteAnnouncement 
 } from '@/firebase/services/announcements';
 import { Announcement } from '@/types';
-// import { useToast } from '@/components/ui/use-toast';
 
 export function useAnnouncements() {
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-//   const { toast } = useToast();
 
   useEffect(() => {
     fetchAnnouncements();
@@ -28,11 +25,7 @@ export function useAnnouncements() {
       setError(null);
     } catch (err) {
       setError('Failed to fetch announcements');
-      alert({
-        title: 'Error',
-        description: 'Failed to fetch announcements',
-        variant: 'destructive',
-      });
+      console.error(err);
     } finally {
       setLoading(false);
     }
@@ -43,18 +36,11 @@ export function useAnnouncements() {
       setLoading(true);
       const newAnnouncement = await createAnnouncement(announcementData);
       setAnnouncements(prev => [...prev, newAnnouncement]);
-      alert({
-        title: 'Success',
-        description: 'Announcement created successfully',
-      });
+      setError(null);
       return newAnnouncement;
     } catch (err) {
       setError('Failed to create announcement');
-      alert({
-        title: 'Error',
-        description: 'Failed to create announcement',
-        variant: 'destructive',
-      });
+      console.error(err);
       return null;
     } finally {
       setLoading(false);
@@ -66,18 +52,11 @@ export function useAnnouncements() {
       setLoading(true);
       await deleteAnnouncement(id);
       setAnnouncements(prev => prev.filter(announcement => announcement.id !== id));
-      alert({
-        title: 'Success',
-        description: 'Announcement deleted successfully',
-      });
+      setError(null);
       return true;
     } catch (err) {
       setError('Failed to delete announcement');
-      alert({
-        title: 'Error',
-        description: 'Failed to delete announcement',
-        variant: 'destructive',
-      });
+      console.error(err);
       return false;
     } finally {
       setLoading(false);

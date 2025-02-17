@@ -1,9 +1,10 @@
+// src/app/announcements/page.tsx
 "use client";
 import React, { useState, useEffect } from "react";
 import { Bell, Search, Filter, Trash2, Edit } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useAnnouncements } from "@/hooks/useAnnouncements";
-import { useSocieties } from "@/hooks/useSocieties"; // Import the new hook
+import { useSocieties } from "@/hooks/useSocieties";
 import { Announcement } from "@/types";
 
 export default function AnnouncementsPage() {
@@ -24,7 +25,10 @@ export default function AnnouncementsPage() {
     refreshAnnouncements,
   } = useAnnouncements();
 
-  // Filter announcements based on search and society
+  useEffect(() => {
+    refreshAnnouncements();
+  }, [refreshAnnouncements]);
+
   const filteredAnnouncements = announcements.filter((announcement) => {
     const matchesSearch = searchQuery
       ? announcement.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -113,8 +117,7 @@ export default function AnnouncementsPage() {
             <option value="all">All Societies</option>
             {societies.map((society) => (
               <option key={society.id} value={society.id}>
-                {society.name}{" "}
-                {/* Assuming 'name' is the property for society name */}
+                {society.name}
               </option>
             ))}
           </select>

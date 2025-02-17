@@ -1,11 +1,9 @@
+// src/middleware.ts
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 export function middleware(request: NextRequest) {
-  // Get the Firebase ID token from cookies
   const token = request.cookies.get('firebaseToken')?.value;
-
-  // Get the path
   const path = request.nextUrl.pathname;
 
   // Array of public routes that don't require authentication
@@ -19,15 +17,11 @@ export function middleware(request: NextRequest) {
     '/events',
     '/announcements',
   ];
-
-  // Check if the requested path matches any protected route
-  const isProtectedRoute = protectedRoutes.some(route =>
-    path.startsWith(route)
-  );
+  const isProtectedRoute = protectedRoutes.some(route => path.startsWith(route));
 
   // Handle root path
   if (path === '/') {
-  return   NextResponse.next(); 
+    return NextResponse.next();
   }
 
   // Handle /login and /register paths (without /auth prefix)
@@ -50,6 +44,12 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/dashboard', request.url));
   }
 
+  // If accessing a public route without token, allow access
+  if (!token && isPublicRoute) {
+    return NextResponse.next();
+  }
+
+  // Default case: allow access
   return NextResponse.next();
 }
 

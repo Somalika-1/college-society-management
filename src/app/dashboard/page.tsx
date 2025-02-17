@@ -1,3 +1,4 @@
+// src/app/dashboard/page.tsx
 "use client";
 
 import React, { useState, useEffect } from "react";
@@ -13,7 +14,7 @@ import {
 import { db } from "@/firebase/config";
 import { useAuth } from "@/hooks/useAuth";
 import { useRouter } from "next/navigation";
-import { signOut } from "firebase/auth"; // Make sure Firebase Auth is properly configured
+import { signOut } from "firebase/auth";
 
 interface Event {
   id: string;
@@ -40,20 +41,27 @@ export default function DashboardPage() {
   const [upcomingEvents, setUpcomingEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { user, auth } = useAuth(); // Assuming `useAuth` hook provides Firebase auth instance
+  const { user, auth } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
-    if (user) {
-      fetchDashboardData();
+    console.log("DashboardPage: Checking user state");
+    if (!user) {
+      console.log(
+        "DashboardPage: User is not logged in, redirecting to login..."
+      );
+      router.push("/auth/login");
+      return;
     }
-  }, [user]);
+
+    console.log("DashboardPage: User is logged in, fetching dashboard data...");
+    fetchDashboardData();
+  }, [user, router]);
 
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
 
-      // Fetch members count for the society
       const membersQuery = query(
         collection(db, "users"),
         where("societyId", "==", user?.societyId)
@@ -61,7 +69,6 @@ export default function DashboardPage() {
       const membersSnapshot = await getDocs(membersQuery);
       const totalMembers = membersSnapshot.size;
 
-      // Fetch active events
       const eventsQuery = query(
         collection(db, "events"),
         where("societyId", "==", user?.societyId),
@@ -82,7 +89,6 @@ export default function DashboardPage() {
         };
       });
 
-      // Fetch announcements count
       const announcementsQuery = query(
         collection(db, "announcements"),
         where("societyId", "==", user?.societyId),
@@ -99,7 +105,7 @@ export default function DashboardPage() {
       setUpcomingEvents(events);
     } catch (error: any) {
       setError("Error fetching dashboard data: " + error.message);
-      console.error(error);
+      console.error("DashboardPage: Error fetching dashboard data:", error);
     } finally {
       setLoading(false);
     }
@@ -111,12 +117,35 @@ export default function DashboardPage() {
 
   const handleLogout = async () => {
     try {
-      await signOut(auth); // Sign out using Firebase auth
-      router.push("/"); // Redirect to login page after logout
+      await signOut(auth);
+      console.log("DashboardPage: User logged out, redirecting to login...");
+      router.push("/auth/login");
     } catch (error) {
-      console.error("Error signing out:", error);
+      console.error("DashboardPage: Error signing out:", error);
     }
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p>Loading dashboard data...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="text-center py-8 text-red-600">
+        {error}
+        <button
+          onClick={() => fetchDashboardData()}
+          className="ml-2 text-blue-600 hover:underline"
+        >
+          Retry
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

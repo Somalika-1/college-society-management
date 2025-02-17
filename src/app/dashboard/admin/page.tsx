@@ -1,57 +1,58 @@
 // src/app/dashboard/admin/page.tsx
-'use client';
+"use client";
 
-import React, { useState } from 'react';
-import { Users, Building2, CalendarDays, AlertCircle } from 'lucide-react';
+import React, { useState, useEffect } from "react";
+import { Users, Building2, CalendarDays, AlertCircle } from "lucide-react";
+import { collection, getDocs, query, where } from "firebase/firestore";
+import { db } from "@/firebase/config";
 
 interface PendingRequest {
   id: string;
-  type: 'society_creation' | 'head_approval';
+  type: "society_creation" | "head_approval";
   title: string;
   description: string;
-  status: 'pending' | 'approved' | 'rejected';
+  status: "pending" | "approved" | "rejected";
   createdAt: Date;
 }
 
-const mockRequests: PendingRequest[] = [
-  {
-    id: '1',
-    type: 'society_creation',
-    title: 'New Tech Society',
-    description: 'Request to create a new technology society',
-    status: 'pending',
-    createdAt: new Date('2024-02-10')
-  },
-  {
-    id: '2',
-    type: 'head_approval',
-    title: 'Drama Club Head',
-    description: 'New society head approval request',
-    status: 'pending',
-    createdAt: new Date('2024-02-11')
-  }
-];
-
 export default function AdminDashboard() {
-  const [requests, setRequests] = useState<PendingRequest[]>(mockRequests);
+  const [requests, setRequests] = useState<PendingRequest[]>([]);
   const [selectedRequest, setSelectedRequest] = useState<string | null>(null);
 
+  useEffect(() => {
+    fetchRequests();
+  }, []);
+
+  const fetchRequests = async () => {
+    try {
+      const requestsQuery = query(
+        collection(db, "requests"),
+        where("status", "==", "pending")
+      );
+      const requestsSnapshot = await getDocs(requestsQuery);
+      const requestsData = requestsSnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+        createdAt: (doc.data().createdAt as Timestamp).toDate(),
+      })) as PendingRequest[];
+      setRequests(requestsData);
+    } catch (error) {
+      console.error("Error fetching requests:", error);
+    }
+  };
+
   const handleApprove = (requestId: string) => {
-    setRequests(prevRequests =>
-      prevRequests.map(request =>
-        request.id === requestId
-          ? { ...request, status: 'approved' }
-          : request
+    setRequests((prevRequests) =>
+      prevRequests.map((request) =>
+        request.id === requestId ? { ...request, status: "approved" } : request
       )
     );
   };
 
   const handleReject = (requestId: string) => {
-    setRequests(prevRequests =>
-      prevRequests.map(request =>
-        request.id === requestId
-          ? { ...request, status: 'rejected' }
-          : request
+    setRequests((prevRequests) =>
+      prevRequests.map((request) =>
+        request.id === requestId ? { ...request, status: "rejected" } : request
       )
     );
   };
@@ -68,7 +69,9 @@ export default function AdminDashboard() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <div className="bg-white rounded-lg shadow-md p-6">
           <div className="flex items-center justify-between mb-2">
-            <h3 className="text-sm font-medium text-gray-600">Total Societies</h3>
+            <h3 className="text-sm font-medium text-gray-600">
+              Total Societies
+            </h3>
             <Building2 className="h-5 w-5 text-gray-400" />
           </div>
           <span className="text-2xl font-bold">12</span>
@@ -92,11 +95,13 @@ export default function AdminDashboard() {
 
         <div className="bg-white rounded-lg shadow-md p-6">
           <div className="flex items-center justify-between mb-2">
-            <h3 className="text-sm font-medium text-gray-600">Pending Requests</h3>
+            <h3 className="text-sm font-medium text-gray-600">
+              Pending Requests
+            </h3>
             <AlertCircle className="h-5 w-5 text-gray-400" />
           </div>
           <span className="text-2xl font-bold">
-            {requests.filter(r => r.status === 'pending').length}
+            {requests.filter((r) => r.status === "pending").length}
           </span>
         </div>
       </div>
@@ -111,30 +116,37 @@ export default function AdminDashboard() {
                 <div className="flex justify-between items-start">
                   <div>
                     <h3 className="font-medium">{request.title}</h3>
-                    <p className="text-sm text-gray-500">{request.description}</p>
+                    <p className="text-sm text-gray-500">
+                      {request.description}
+                    </p>
                     <span className="text-xs text-gray-400">
                       {request.createdAt.toLocaleDateString()}
                     </span>
                     <div className="mt-1">
-                      <span className={`text-xs px-2 py-1 rounded-full ${
-                        request.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                        request.status === 'approved' ? 'bg-green-100 text-green-800' :
-                        'bg-red-100 text-red-800'
-                      }`}>
-                        {request.status.charAt(0).toUpperCase() + request.status.slice(1)}
+                      <span
+                        className={`text-xs px-2 py-1 rounded-full ${
+                          request.status === "pending"
+                            ? "bg-yellow-100 text-yellow-800"
+                            : request.status === "approved"
+                            ? "bg-green-100 text-green-800"
+                            : "bg-red-100 text-red-800"
+                        }`}
+                      >
+                        {request.status.charAt(0).toUpperCase() +
+                          request.status.slice(1)}
                       </span>
                     </div>
                   </div>
                   <div className="flex space-x-2">
-                    {request.status === 'pending' && (
+                    {request.status === "pending" && (
                       <>
-                        <button 
+                        <button
                           onClick={() => handleApprove(request.id)}
                           className="px-3 py-1 text-sm text-green-600 hover:bg-green-50 rounded-md"
                         >
                           Approve
                         </button>
-                        <button 
+                        <button
                           onClick={() => handleReject(request.id)}
                           className="px-3 py-1 text-sm text-red-600 hover:bg-red-50 rounded-md"
                         >
@@ -142,7 +154,7 @@ export default function AdminDashboard() {
                         </button>
                       </>
                     )}
-                    <button 
+                    <button
                       onClick={() => viewDetails(request.id)}
                       className="px-3 py-1 text-sm text-blue-600 hover:bg-blue-50 rounded-md"
                     >
@@ -163,19 +175,25 @@ export default function AdminDashboard() {
           {/* Activity chart would go here */}
           <div className="bg-gray-50 rounded-lg p-4">
             <h3 className="font-medium mb-2">Recent Activity</h3>
-            <p className="text-sm text-gray-500">Chart visualization will be added here</p>
+            <p className="text-sm text-gray-500">
+              Chart visualization will be added here
+            </p>
           </div>
-          
+
           {/* Member statistics */}
           <div className="bg-gray-50 rounded-lg p-4">
             <h3 className="font-medium mb-2">Member Statistics</h3>
-            <p className="text-sm text-gray-500">Member growth trends will be shown here</p>
+            <p className="text-sm text-gray-500">
+              Member growth trends will be shown here
+            </p>
           </div>
-          
+
           {/* Event metrics */}
           <div className="bg-gray-50 rounded-lg p-4">
             <h3 className="font-medium mb-2">Event Metrics</h3>
-            <p className="text-sm text-gray-500">Event participation data will be displayed here</p>
+            <p className="text-sm text-gray-500">
+              Event participation data will be displayed here
+            </p>
           </div>
         </div>
       </div>

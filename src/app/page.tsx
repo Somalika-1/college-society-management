@@ -1,3 +1,4 @@
+// src/app/page.tsx
 "use client";
 import React from "react";
 import Link from "next/link";
@@ -19,11 +20,9 @@ export default function LandingPage() {
   const { events, loading: eventsLoading } = useEvents();
   const { societies, loading: societiesLoading } = useSocieties();
 
-  // Filter for public announcements only
   const publicAnnouncements =
     announcements?.filter((announcement) => announcement.isPublic) || [];
 
-  // Get upcoming events
   const upcomingEvents =
     events?.filter((event) => new Date(event.date) > new Date()) || [];
 

@@ -1,30 +1,13 @@
 // src/app/societies/page.tsx
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Search, Plus } from "lucide-react";
-
-const mockSocieties = [
-  {
-    id: "1",
-    name: "Tech Society",
-    description: "A community for technology enthusiasts",
-    memberCount: 120,
-    image: "/tech-society.jpg",
-    tags: ["Technology", "Programming", "Innovation"],
-  },
-  {
-    id: "2",
-    name: "Cultural Club",
-    description: "Celebrating arts and culture",
-    memberCount: 85,
-    image: "/cultural-club.jpg",
-    tags: ["Arts", "Culture", "Performance"],
-  },
-];
+import { useSocieties } from "@/hooks/useSocieties";
 
 export default function SocietiesPage() {
   const [searchQuery, setSearchQuery] = useState("");
+  const { societies, loading, error } = useSocieties();
 
   return (
     <div className="space-y-6">
@@ -52,38 +35,46 @@ export default function SocietiesPage() {
 
       {/* Societies Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {mockSocieties.map((society) => (
-          <div
-            key={society.id}
-            className="bg-white rounded-lg shadow-md overflow-hidden"
-          >
-            <div className="h-48 bg-gray-200">
-              {/* Society image would go here */}
-            </div>
-            <div className="p-6">
-              <h3 className="text-xl font-semibold mb-2">{society.name}</h3>
-              <p className="text-gray-600 mb-4">{society.description}</p>
-              <div className="flex flex-wrap gap-2 mb-4">
-                {society.tags.map((tag) => (
-                  <span
-                    key={tag}
-                    className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full"
-                  >
-                    {tag}
+        {loading ? (
+          <p>Loading societies...</p>
+        ) : error ? (
+          <p className="text-red-500">{error}</p>
+        ) : societies.length > 0 ? (
+          societies.map((society) => (
+            <div
+              key={society.id}
+              className="bg-white rounded-lg shadow-md overflow-hidden"
+            >
+              <div className="h-48 bg-gray-200">
+                {/* Society image would go here */}
+              </div>
+              <div className="p-6">
+                <h3 className="text-xl font-semibold mb-2">{society.name}</h3>
+                <p className="text-gray-600 mb-4">{society.description}</p>
+                <div className="flex flex-wrap gap-2 mb-4">
+                  {society.tags.map((tag) => (
+                    <span
+                      key={tag}
+                      className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full"
+                    >
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-500">
+                    {society.memberCount} members
                   </span>
-                ))}
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-500">
-                  {society.memberCount} members
-                </span>
-                <button className="text-blue-600 hover:text-blue-800">
-                  View Details
-                </button>
+                  <button className="text-blue-600 hover:text-blue-800">
+                    View Details
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
-        ))}
+          ))
+        ) : (
+          <p className="text-gray-500">No societies found</p>
+        )}
       </div>
     </div>
   );

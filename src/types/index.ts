@@ -1,5 +1,4 @@
 // src/types/index.ts
-
 export interface User {
   id: string;
   name: string;
@@ -77,10 +76,8 @@ export interface Event {
   };
 }
 
-// Re-export Announcement type
 export type { Announcement } from './announcement';
 
-// Common types used across the application
 export type Role = 'admin' | 'society_head' | 'member';
 
 export interface BaseResponse {

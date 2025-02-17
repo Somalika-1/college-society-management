@@ -1,35 +1,22 @@
 // src/app/events/page.tsx
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Calendar, MapPin, Users, Search, Plus } from "lucide-react";
-
-const mockEvents = [
-  {
-    id: "1",
-    title: "Tech Workshop 2024",
-    description: "Learn about the latest web technologies",
-    date: new Date("2024-03-20"),
-    venue: "Main Auditorium",
-    society: "Tech Society",
-    registeredParticipants: 45,
-    maxParticipants: 100,
-  },
-  {
-    id: "2",
-    title: "Cultural Night",
-    description: "Annual cultural celebration featuring performances",
-    date: new Date("2024-03-25"),
-    venue: "College Ground",
-    society: "Cultural Club",
-    registeredParticipants: 150,
-    maxParticipants: 200,
-  },
-];
+import { useEvents } from "@/hooks/useEvents";
 
 export default function EventsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedFilter, setSelectedFilter] = useState("all");
+  const { events, loading, error } = useEvents();
+
+  useEffect(() => {
+    if (selectedFilter === "upcoming") {
+      // Filter upcoming events
+    } else if (selectedFilter === "past") {
+      // Filter past events
+    }
+  }, [selectedFilter]);
 
   return (
     <div className="space-y-6">
@@ -72,57 +59,65 @@ export default function EventsPage() {
 
       {/* Events List */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {mockEvents.map((event) => (
-          <div
-            key={event.id}
-            className="bg-white rounded-lg shadow-md overflow-hidden"
-          >
-            <div className="p-6">
-              <h3 className="text-xl font-semibold mb-2">{event.title}</h3>
-              <p className="text-gray-600 mb-4">{event.description}</p>
+        {loading ? (
+          <p>Loading events...</p>
+        ) : error ? (
+          <p className="text-red-500">{error}</p>
+        ) : events.length > 0 ? (
+          events.map((event) => (
+            <div
+              key={event.id}
+              className="bg-white rounded-lg shadow-md overflow-hidden"
+            >
+              <div className="p-6">
+                <h3 className="text-xl font-semibold mb-2">{event.title}</h3>
+                <p className="text-gray-600 mb-4">{event.description}</p>
 
-              <div className="space-y-2 mb-4">
-                <div className="flex items-center text-gray-600">
-                  <Calendar className="h-4 w-4 mr-2" />
-                  <span>{event.date.toLocaleDateString()}</span>
+                <div className="space-y-2 mb-4">
+                  <div className="flex items-center text-gray-600">
+                    <Calendar className="h-4 w-4 mr-2" />
+                    <span>{new Date(event.date).toLocaleDateString()}</span>
+                  </div>
+
+                  <div className="flex items-center text-gray-600">
+                    <MapPin className="h-4 w-4 mr-2" />
+                    <span>{event.venue}</span>
+                  </div>
+
+                  <div className="flex items-center text-gray-600">
+                    <Users className="h-4 w-4 mr-2" />
+                    <span>
+                      {event.registeredParticipants} / {event.maxParticipants}{" "}
+                      registered
+                    </span>
+                  </div>
                 </div>
 
-                <div className="flex items-center text-gray-600">
-                  <MapPin className="h-4 w-4 mr-2" />
-                  <span>{event.venue}</span>
-                </div>
-
-                <div className="flex items-center text-gray-600">
-                  <Users className="h-4 w-4 mr-2" />
-                  <span>
-                    {event.registeredParticipants} / {event.maxParticipants}{" "}
-                    registered
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-500">
+                    By {event.society}
                   </span>
+                  <button
+                    className={`px-4 py-2 rounded-md ${
+                      event.registeredParticipants >= event.maxParticipants
+                        ? "bg-gray-100 text-gray-500 cursor-not-allowed"
+                        : "bg-blue-600 text-white hover:bg-blue-700"
+                    }`}
+                    disabled={
+                      event.registeredParticipants >= event.maxParticipants
+                    }
+                  >
+                    {event.registeredParticipants >= event.maxParticipants
+                      ? "Fully Booked"
+                      : "Register Now"}
+                  </button>
                 </div>
-              </div>
-
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-500">
-                  By {event.society}
-                </span>
-                <button
-                  className={`px-4 py-2 rounded-md ${
-                    event.registeredParticipants >= event.maxParticipants
-                      ? "bg-gray-100 text-gray-500 cursor-not-allowed"
-                      : "bg-blue-600 text-white hover:bg-blue-700"
-                  }`}
-                  disabled={
-                    event.registeredParticipants >= event.maxParticipants
-                  }
-                >
-                  {event.registeredParticipants >= event.maxParticipants
-                    ? "Fully Booked"
-                    : "Register Now"}
-                </button>
               </div>
             </div>
-          </div>
-        ))}
+          ))
+        ) : (
+          <p className="text-gray-500">No events found</p>
+        )}
       </div>
     </div>
   );

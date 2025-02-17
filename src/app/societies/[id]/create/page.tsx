@@ -3,6 +3,7 @@
 
 import React, { useState } from "react";
 import { X } from "lucide-react";
+import { useSocieties } from "@/hooks/useSocieties";
 
 export default function CreateSocietyPage() {
   const [formData, setFormData] = useState({
@@ -11,11 +12,19 @@ export default function CreateSocietyPage() {
     tags: [] as string[],
   });
   const [tagInput, setTagInput] = useState("");
+  const { addSociety } = useSocieties();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Handle form submission
-    console.log("Form submitted:", formData);
+    try {
+      await addSociety(formData);
+      alert("Society created successfully");
+      setFormData({ name: "", description: "", tags: [] });
+      setTagInput("");
+    } catch (error) {
+      alert("Failed to create society");
+      console.error("Error creating society:", error);
+    }
   };
 
   const handleChange = (
