@@ -4,64 +4,59 @@ import type { NextRequest } from 'next/server';
 
 export function middleware(request: NextRequest) {
   const token = request.cookies.get('firebaseToken')?.value;
+  const userRole = request.cookies.get('userRole')?.value;
   const path = request.nextUrl.pathname;
 
-  // Array of public routes that don't require authentication
-  const publicRoutes = ['/auth/login', '/auth/register'];
-  const isPublicRoute = publicRoutes.includes(path);
+  console.log('Middleware Check:', {
+    path,
+    hasToken: !!token,
+    userRole,
+    fullUrl: request.url
+  });
 
-  // Array of protected routes that require authentication
-  const protectedRoutes = [
-    '/dashboard',
-    '/societies',
-    '/events',
-    '/announcements',
-  ];
-  const isProtectedRoute = protectedRoutes.some(route => path.startsWith(route));
+  // Protect dashboard routes
+  if (path.startsWith('/dashboard')) {
+    if (!token) {
+      console.log('No token - redirecting to login');
+      return NextResponse.redirect(new URL('/auth/login', request.url));
+    }
 
-  // Handle root path
-  if (path === '/') {
-    return NextResponse.next();
+    // Check specific dashboard access
+    if (path === '/dashboard/admin' && userRole !== 'admin') {
+      console.log('Non-admin accessing admin dashboard');
+      return NextResponse.redirect(new URL('/dashboard', request.url));
+    }
+
+    if (path === '/dashboard/society' && userRole !== 'society_head') {
+      console.log('Non-society head accessing society dashboard');
+      return NextResponse.redirect(new URL('/dashboard', request.url));
+    }
+
+    // Don't redirect if already on correct path
+    if (path === '/dashboard') {
+      console.log('Already on main dashboard - allowing access');
+      return NextResponse.next();
+    }
   }
 
-  // Handle /login and /register paths (without /auth prefix)
-  if (path === '/login') {
-    return NextResponse.redirect(new URL('/auth/login', request.url));
-  }
-  if (path === '/register') {
-    return NextResponse.redirect(new URL('/auth/register', request.url));
-  }
-
-  // If accessing protected route without token, redirect to login
-  if (isProtectedRoute && !token) {
-    const loginUrl = new URL('/auth/login', request.url);
-    loginUrl.searchParams.set('callbackUrl', path);
-    return NextResponse.redirect(loginUrl);
-  }
-
-  // If accessing auth pages with token, redirect to dashboard
-  if (token && isPublicRoute) {
+  // Handle auth routes when user is already logged in
+  if (token && (path === '/auth/login' || path === '/auth/register')) {
+    console.log('Authenticated user accessing auth route');
+    if (userRole === 'admin') {
+      return NextResponse.redirect(new URL('/dashboard/admin', request.url));
+    }
+    if (userRole === 'society_head') {
+      return NextResponse.redirect(new URL('/dashboard/society', request.url));
+    }
     return NextResponse.redirect(new URL('/dashboard', request.url));
   }
 
-  // If accessing a public route without token, allow access
-  if (!token && isPublicRoute) {
-    return NextResponse.next();
-  }
-
-  // Default case: allow access
   return NextResponse.next();
 }
 
 export const config = {
   matcher: [
-    '/',
-    '/login',
-    '/register',
     '/dashboard/:path*',
-    '/societies/:path*',
-    '/events/:path*',
-    '/announcements/:path*',
-    '/auth/:path*',
-  ],
+    '/auth/:path*'
+  ]
 };

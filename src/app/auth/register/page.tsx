@@ -1,3 +1,4 @@
+"use client";
 import React, { useState } from "react";
 import { QrReader } from "@blackbox-vision/react-qr-reader";
 import { Card } from "@/components/common/Card";

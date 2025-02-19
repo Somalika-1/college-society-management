@@ -1,11 +1,7 @@
 // src/components/common/Button.tsx
 import React from "react";
-
-interface ButtonProps {
-  children: React.ReactNode;
-  onClick?: () => void;
+interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: "primary" | "secondary" | "danger";
-  disabled?: boolean;
   className?: string;
 }
 

@@ -1,120 +1,119 @@
-// src/app/auth/login/page.tsx
 "use client";
 
-import { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
-import Link from "next/link";
+import { Card } from "@/components/common/Card";
+import { Button } from "@/components/common/Button";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const { user, login, error, loading } = useAuth();
+  const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const { login } = useAuth();
   const router = useRouter();
-  console.log(router);
-
-  useEffect(() => {
-    console.log("useEffect: Checking user state");
-    if (loading) {
-      console.log("useEffect: Loading...");
-      return;
-    }
-
-    if (user) {
-      console.log("useEffect: User is logged in, redirecting...");
-      const roleBasedPath =
-        user.role === "admin"
-          ? "/dashboard/admin"
-          : user.role === "society_head"
-          ? "/dashboard/society"
-          : "/dashboard";
-
-      console.log(`Redirecting to ...: ${roleBasedPath}`);
-
-      router.push(roleBasedPath);
-    }
-  }, [user, loading, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("handleSubmit: Attempting to log in...");
-    try {
-      const userRole = await login(email, password);
-      console.log(`handleSubmit: Login successful, user role: ${userRole}`);
-      if (userRole) {
-        const roleBasedPath =
-          userRole === "admin"
-            ? "/dashboard/admin"
-            : userRole === "society_head"
-            ? "/dashboard/society"
-            : "/dashboard";
+    setError("");
+    setIsLoading(true);
 
-        console.log(`handleSubmit: Redirecting to: ${roleBasedPath}`);
-        router.replace(roleBasedPath);
-      }
-    } catch (err) {
+    try {
+      console.log("Attempting login for:", email);
+      const userRole = await login(email, password);
+      console.log("Login successful, role:", userRole);
+
+      const redirectPath =
+        userRole === "admin"
+          ? "/dashboard/admin"
+          : userRole === "society_head"
+          ? "/dashboard/society"
+          : "/dashboard";
+
+      console.log("Redirecting to:", redirectPath);
+      window.location.href = redirectPath;
+      router.push(redirectPath);
+    } catch (err: any) {
       console.error("Login error:", err);
+      setError(
+        err.message || "Failed to login. Please check your credentials."
+      );
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p>Checking authentication...</p>
-      </div>
-    );
-  }
-
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="max-w-md w-full space-y-8 p-8 bg-white rounded-lg shadow">
-        <h2 className="text-3xl font-bold text-center">
-          Sign in to your account
-        </h2>
-
-        {error && (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
-            {error}
-          </div>
-        )}
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+      <Card className="max-w-md w-full space-y-8 p-8">
+        <div>
+          <h2 className="text-center text-3xl font-bold text-gray-900">
+            Login to your account
+          </h2>
+        </div>
 
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          <div>
-            <input
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-3 py-2 border rounded"
-              placeholder="Email address"
-            />
+          <div className="rounded-md shadow-sm space-y-4">
+            <div>
+              <label
+                htmlFor="email"
+                className="block text-sm font-medium text-gray-700"
+              >
+                Email address
+              </label>
+              <input
+                id="email"
+                name="email"
+                type="email"
+                autoComplete="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                placeholder="Enter your email"
+              />
+            </div>
+
+            <div>
+              <label
+                htmlFor="password"
+                className="block text-sm font-medium text-gray-700"
+              >
+                Password
+              </label>
+              <input
+                id="password"
+                name="password"
+                type="password"
+                autoComplete="current-password"
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                placeholder="Enter your password"
+              />
+            </div>
           </div>
+
+          {error && (
+            <div className="text-red-600 text-sm text-center bg-red-50 p-2 rounded">
+              {error}
+            </div>
+          )}
+
           <div>
-            <input
-              type="password"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-3 py-2 border rounded"
-              placeholder="Password"
-            />
-          </div>
-          <div>
-            <button
+            <Button
+              variant="primary"
+              className="w-full"
+              disabled={isLoading}
               type="submit"
-              className="w-full bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
             >
-              Sign in
-            </button>
+              {isLoading ? "Logging in..." : "Login"}
+            </Button>
           </div>
         </form>
-
-        <div className="text-center mt-4">
-          <Link href="/auth/register" className="text-blue-600 hover:underline">
-            Don't have an account? Register
-          </Link>
-        </div>
-      </div>
+      </Card>
     </div>
   );
 }

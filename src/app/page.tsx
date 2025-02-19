@@ -1,10 +1,8 @@
-// src/app/page.tsx
 "use client";
 import React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Users, Calendar, Bell } from "lucide-react";
-import Navbar from "@/components/common/Navbar";
 import { Card } from "@/components/common/Card";
 import { Button } from "@/components/common/Button";
 import EventCard from "@/components/events/EventCard";
@@ -13,9 +11,11 @@ import StatsCard from "@/components/dashboard/StatsCard";
 import { useAnnouncements } from "@/hooks/useAnnouncements";
 import { useEvents } from "@/hooks/useEvents";
 import { useSocieties } from "@/hooks/useSocieties";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function LandingPage() {
   const router = useRouter();
+  const { user } = useAuth();
   const { announcements, loading: announcementsLoading } = useAnnouncements();
   const { events, loading: eventsLoading } = useEvents();
   const { societies, loading: societiesLoading } = useSocieties();
@@ -30,25 +30,31 @@ export default function LandingPage() {
     router.push("/auth/register");
   };
 
+  const handleLogin = () => {
+    router.push("/auth/login");
+  };
+
   const handleEventRegistration = (eventId: string) => {
-    // If user is not logged in, redirect to login
     router.push(`/events/${eventId}/register`);
   };
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Navbar />
-
       {/* Hero Section */}
       <section className="bg-white shadow">
         <div className="max-w-7xl mx-auto py-16 px-4 sm:px-6 lg:px-8">
           <h1 className="text-4xl font-bold text-gray-900 text-center mb-4">
             Campus Society Hub
           </h1>
-          <p className="text-xl text-gray-600 text-center max-w-3xl mx-auto">
+          <p className="text-xl text-gray-600 text-center max-w-3xl mx-auto mb-8">
             Discover and engage with student societies, upcoming events, and
             important announcements.
           </p>
+          <div className="flex justify-center space-x-4">
+            <Button variant="primary" onClick={handleLogin}>
+              Login
+            </Button>
+          </div>
         </div>
       </section>
 
@@ -179,9 +185,14 @@ export default function LandingPage() {
           <p className="text-lg text-blue-100 mb-8">
             Register now to participate in events and join societies!
           </p>
-          <Button variant="secondary" onClick={handleSignUp}>
-            Sign Up Now
-          </Button>
+          <div className="flex justify-center space-x-4">
+            <Button variant="secondary" onClick={handleLogin}>
+              Login
+            </Button>
+            <Button variant="secondary" onClick={handleSignUp}>
+              Sign Up
+            </Button>
+          </div>
         </div>
       </section>
     </div>
