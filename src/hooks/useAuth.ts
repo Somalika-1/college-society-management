@@ -61,7 +61,7 @@ export function useAuth() {
               error: null,
             });
           } else {
-            console.error("User document not found");
+            console.log("User document not found");
             setAuthState({ user: null, loading: false, error: "User data not found" });
           }
         } catch (error) {
@@ -80,7 +80,7 @@ export function useAuth() {
   }, []);
   const login = async (email: string, password: string) => {
     try {
-      console.log("Attempting login for:", email);
+      console.log("Attempting login for:", email + " password " ,password);
       setAuthState((prev) => ({ ...prev, loading: true }));
       
       // Detailed logging for Firebase Authentication
@@ -122,8 +122,8 @@ export function useAuth() {
       console.log("Login successful, user role:", userData.role);
       return userData.role;
     } catch (error: any) {
-      console.error("Comprehensive Login Error:", error);
-      console.error("Error Details:", {
+      console.log("Comprehensive Login Error:", error);
+      console.log("Error Details:", {
         name: error.name,
         message: error.message,
         code: error.code,
