@@ -28,7 +28,7 @@ export default function MemberDashboard() {
         {/* Header */}
         <div className="bg-white rounded-lg shadow-md p-6 mb-6">
           <h1 className="text-2xl font-bold">Welcome, {user.email}</h1>
-          <p className="text-gray-600">Member Dashboard</p>
+          <p className="text-gray-600">Member {user.name} Dashboard</p>
         </div>
 
         {/* Stats Grid */}

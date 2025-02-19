@@ -6,15 +6,14 @@ import { useRouter } from "next/navigation";
 import { Users, Calendar, Bell, UserCircle } from "lucide-react";
 import {
   collection,
-  doc,
   query,
   where,
-  getDoc,
   getDocs,
   getFirestore,
 } from "firebase/firestore";
 import { app } from "@/firebase/config";
 
+// Define an interface for member details
 interface MemberDetails {
   id: string;
   name: string;
@@ -28,8 +27,7 @@ export default function SocietyDashboard() {
   const { user, loading } = useAuth();
   const db = getFirestore(app);
 
-  // State for society data
-  const [societyName, setSocietyName] = useState("");
+  // State for dynamic data
   const [membersCount, setMembersCount] = useState(0);
   const [eventsCount, setEventsCount] = useState(0);
   const [announcementsCount, setAnnouncementsCount] = useState(0);
@@ -37,47 +35,40 @@ export default function SocietyDashboard() {
   const [memberRequests, setMemberRequests] = useState<any[]>([]);
   const [societyMembers, setSocietyMembers] = useState<MemberDetails[]>([]);
 
-  // Redirect unauthorized users
+  // Navigation effect
   useEffect(() => {
     if (!loading && user?.role !== "society_head") {
       router.push("/dashboard");
     }
   }, [user, loading, router]);
 
-  // Fetch society data
+  // Data fetching effect
   useEffect(() => {
+    // Only fetch if user is a society head
     if (!user || user.role !== "society_head") return;
 
     const fetchSocietyData = async () => {
       try {
-        // Step 1: Fetch Society Data
-        const societyDoc = await getDoc(doc(db, "societies", user.societyId));
+        // Fetch members
+        const membersQuery = query(
+          collection(db, "users"),
+          where("societyId", "==", user.societyId)
+        );
+        const membersSnapshot = await getDocs(membersQuery);
 
-        if (!societyDoc.exists()) {
-          console.error("Society not found!");
-          return;
-        }
+        // Map members with details
+        const members = membersSnapshot.docs.map(
+          (doc) =>
+            ({
+              id: doc.id,
+              ...doc.data(),
+            } as MemberDetails)
+        );
 
-        const societyData = societyDoc.data();
-        setSocietyName(societyData.name);
-        const membersIds = societyData.members || []; // Array of user IDs
+        setSocietyMembers(members);
+        setMembersCount(members.length);
 
-        // Step 2: Fetch Members Data (Batch Query)
-        if (membersIds.length > 0) {
-          const membersQuery = query(
-            collection(db, "users"),
-            where("id", "in", membersIds) // Fetch only users in this society
-          );
-          const membersSnapshot = await getDocs(membersQuery);
-          const members = membersSnapshot.docs.map((doc) => ({
-            id: doc.id,
-            ...doc.data(),
-          })) as MemberDetails[];
-          setSocietyMembers(members);
-          setMembersCount(members.length);
-        }
-
-        // Step 3: Fetch Events Count
+        // Fetch events count
         const eventsQuery = query(
           collection(db, "events"),
           where("societyId", "==", user.societyId)
@@ -85,7 +76,7 @@ export default function SocietyDashboard() {
         const eventsSnapshot = await getDocs(eventsQuery);
         setEventsCount(eventsSnapshot.size);
 
-        // Step 4: Fetch Announcements Count
+        // Fetch announcements count
         const announcementsQuery = query(
           collection(db, "announcements"),
           where("societyId", "==", user.societyId)
@@ -93,7 +84,7 @@ export default function SocietyDashboard() {
         const announcementsSnapshot = await getDocs(announcementsQuery);
         setAnnouncementsCount(announcementsSnapshot.size);
 
-        // Step 5: Fetch Upcoming Events
+        // Fetch upcoming events
         const upcomingEventsQuery = query(
           collection(db, "events"),
           where("societyId", "==", user.societyId),
@@ -106,7 +97,7 @@ export default function SocietyDashboard() {
         }));
         setUpcomingEvents(events);
 
-        // Step 6: Fetch Pending Member Requests
+        // Fetch member requests
         const memberRequestsQuery = query(
           collection(db, "memberRequests"),
           where("societyId", "==", user.societyId),
@@ -126,15 +117,18 @@ export default function SocietyDashboard() {
     fetchSocietyData();
   }, [user, db]);
 
-  if (loading) return <div>Loading...</div>;
+  // Loading state
+  if (loading) {
+    return <div>Loading...</div>;
+  }
 
-  if (!user || user.role !== "society_head") return null;
+  // Unauthorized access
+  if (!user || user.role !== "society_head") {
+    return null;
+  }
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Welcome, {user.name}</h1>
-      <p className="text-lg text-gray-600">Society: {societyName}</p>
-
       {/* Society Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="bg-white p-6 rounded-lg shadow">
@@ -159,6 +153,39 @@ export default function SocietyDashboard() {
             <Bell className="h-6 w-6 text-gray-400" />
           </div>
           <p className="text-2xl font-bold mt-2">{announcementsCount}</p>
+        </div>
+      </div>
+
+      {/* Society Actions */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="bg-white p-6 rounded-lg shadow">
+          <h2 className="text-xl font-bold mb-4">Upcoming Events</h2>
+          {upcomingEvents.length > 0 ? (
+            <ul>
+              {upcomingEvents.map((event) => (
+                <li key={event.id} className="mb-2">
+                  {event.title} - {new Date(event.date).toLocaleDateString()}
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p>No upcoming events</p>
+          )}
+        </div>
+
+        <div className="bg-white p-6 rounded-lg shadow">
+          <h2 className="text-xl font-bold mb-4">Member Requests</h2>
+          {memberRequests.length > 0 ? (
+            <ul>
+              {memberRequests.map((request) => (
+                <li key={request.id} className="mb-2">
+                  {request.name} ({request.email})
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p>No pending member requests</p>
+          )}
         </div>
       </div>
 

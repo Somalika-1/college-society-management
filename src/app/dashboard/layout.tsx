@@ -2,9 +2,12 @@
 // src/app/dashboard/layout.tsx
 
 import React from "react";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from "../../hooks/useAuth";
 import { useRouter } from "next/navigation";
+// import "./globals.css";
+import "../../styles/globals.css"; // Adjust the path accordingly
 
+// import "tailwindcss/tailwind.css";
 export default function DashboardLayout({
   children,
 }: {
