@@ -22,7 +22,6 @@ export default function LandingPage() {
 
   const publicAnnouncements =
     announcements?.filter((announcement) => announcement.isPublic) || [];
-
   const upcomingEvents =
     events?.filter((event) => new Date(event.date) > new Date()) || [];
 
@@ -39,28 +38,29 @@ export default function LandingPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-b from-blue-200 to-blue-100 text-gray-900">
       {/* Hero Section */}
-      <section className="bg-white shadow">
-        <div className="max-w-7xl mx-auto py-16 px-4 sm:px-6 lg:px-8">
-          <h1 className="text-4xl font-bold text-gray-900 text-center mb-4">
-            Campus Society Hub
-          </h1>
-          <p className="text-xl text-gray-600 text-center max-w-3xl mx-auto mb-8">
-            Discover and engage with student societies, upcoming events, and
-            important announcements.
+      <section className="bg-gradient-to-b from-gray-900 to-slate-800 text-white py-20 text-center shadow-lg rounded-b-3xl">
+        <div className="max-w-7xl mx-auto px-6">
+          <h1 className="text-5xl font-extrabold mb-4">Campus Society Hub</h1>
+          <p className="text-lg mb-6 capitalize">
+            Discover student societies, join exciting events, and stay updated
+            with the latest announcements!
           </p>
-          <div className="flex justify-center space-x-4">
-            <Button variant="primary" onClick={handleLogin}>
-              Login
-            </Button>
-          </div>
+          <Button
+            variant="outline"
+            size="lg"
+            className="bg-gray-300"
+            onClick={handleLogin}
+          >
+            Login
+          </Button>
         </div>
       </section>
 
       {/* Quick Stats */}
-      <section className="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
+      <section className="max-w-7xl mx-auto py-12 px-6">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-8">
           <StatsCard
             title="Active Societies"
             value={societies?.length || 0}
@@ -80,24 +80,27 @@ export default function LandingPage() {
       </section>
 
       {/* Latest Announcements Section */}
-      <section className="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
-        <h2 className="text-2xl font-bold text-gray-900 mb-6">
+      <section className="max-w-7xl mx-auto py-12 px-6">
+        <h2 className="text-3xl font-bold text-center mb-8">
           Latest Announcements
         </h2>
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {announcementsLoading ? (
             <Card>Loading announcements...</Card>
           ) : (
             publicAnnouncements.slice(0, 3).map((announcement) => (
-              <Card key={announcement.id}>
+              <Card
+                key={announcement.id}
+                className="hover:shadow-xl transition"
+              >
                 <div className="p-6">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                  <h3 className="text-xl font-semibold mb-2">
                     {announcement.title}
                   </h3>
-                  <p className="text-gray-600 mb-4 line-clamp-3">
+                  <p className="text-gray-700 line-clamp-3">
                     {announcement.content}
                   </p>
-                  <p className="text-sm text-gray-500">
+                  <p className="text-sm text-gray-500 mt-2">
                     {new Date(announcement.createdAt).toLocaleDateString()}
                   </p>
                 </div>
@@ -113,11 +116,9 @@ export default function LandingPage() {
       </section>
 
       {/* Upcoming Events Section */}
-      <section className="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
-        <h2 className="text-2xl font-bold text-gray-900 mb-6">
-          Upcoming Events
-        </h2>
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+      <section className="max-w-7xl mx-auto py-12 px-6">
+        <h2 className="text-3xl font-bold text-center mb-8">Upcoming Events</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {eventsLoading ? (
             <Card>Loading events...</Card>
           ) : (
@@ -126,73 +127,59 @@ export default function LandingPage() {
               .map((event) => (
                 <EventCard
                   key={event.id}
-                  id={event.id}
-                  title={event.title}
-                  description={event.description}
-                  date={new Date(event.date)}
-                  venue={event.venue}
-                  societyId={event.societyId}
-                  registeredParticipants={event.registeredParticipants || []}
-                  maxParticipants={event.maxParticipants}
+                  {...event}
                   onRegister={() => handleEventRegistration(event.id)}
                 />
               ))
           )}
         </div>
-        <div className="text-center mt-8">
-          <Link href="/events">
-            <Button variant="secondary">View All Events</Button>
-          </Link>
-        </div>
       </section>
 
       {/* Featured Societies Section */}
-      <section className="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
-        <h2 className="text-2xl font-bold text-gray-900 mb-6">
+      <section className="max-w-7xl mx-auto py-12 px-6">
+        <h2 className="text-3xl font-bold text-center mb-8">
           Featured Societies
         </h2>
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {societiesLoading ? (
             <Card>Loading societies...</Card>
           ) : (
             societies
-              ?.slice(0, 3)
+              .slice(0, 3)
               .map((society) => (
                 <SocietyCard
                   key={society.id}
-                  name={society.name}
-                  description={society.description}
-                  memberCount={society.members.length}
-                  tags={["Active"]}
+                  {...society}
                   onViewDetails={() => router.push(`/societies/${society.id}`)}
                 />
               ))
           )}
         </div>
-        <div className="text-center mt-8">
-          <Link href="/societies">
-            <Button variant="secondary">View All Societies</Button>
-          </Link>
-        </div>
       </section>
 
       {/* CTA Section */}
-      <section className="bg-blue-600 mt-12">
-        <div className="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-2xl font-bold text-white mb-4">
-            Join Our Campus Community
-          </h2>
-          <p className="text-lg text-blue-100 mb-8">
-            Register now to participate in events and join societies!
-          </p>
-          <div className="flex justify-center space-x-4">
-            <Button variant="secondary" onClick={handleLogin}>
-              Login
-            </Button>
-            <Button variant="secondary" onClick={handleSignUp}>
-              Sign Up
-            </Button>
-          </div>
+      <section className="bg-gray-600 py-16 text-center text-white mt-12 rounded-t-3xl">
+        <h2 className="text-3xl font-bold mb-4">Join Our Campus Community</h2>
+        <p className="text-lg mb-6">
+          Register now to participate in events and join societies!
+        </p>
+        <div className="flex justify-center gap-4">
+          <Button
+            variant="outline"
+            size="lg"
+            className="bg-gray-300 text-gray-800"
+            onClick={handleLogin}
+          >
+            Login
+          </Button>
+          <Button
+            variant="outline"
+            size="lg"
+            className="bg-gray-300 text-gray-800"
+            onClick={handleSignUp}
+          >
+            Sign Up
+          </Button>
         </div>
       </section>
     </div>
