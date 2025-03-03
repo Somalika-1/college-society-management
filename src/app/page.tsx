@@ -19,11 +19,45 @@ export default function LandingPage() {
   const { announcements, loading: announcementsLoading } = useAnnouncements();
   const { events, loading: eventsLoading } = useEvents();
   const { societies, loading: societiesLoading } = useSocieties();
+  // Helper function to safely convert Firestore timestamps or date strings
+  const safeDate = (dateField: any): Date => {
+    if (!dateField) return new Date(); // Default to current date if field is missing
+
+    // If it's a Firestore timestamp with toDate method
+    if (typeof dateField.toDate === "function") {
+      return dateField.toDate();
+    }
+
+    // If it's already a Date object
+    if (dateField instanceof Date) {
+      return dateField;
+    }
+
+    // Try to parse as string
+    const parsedDate = new Date(dateField);
+    return isNaN(parsedDate.getTime()) ? new Date() : parsedDate;
+  };
+
+  // Function to format date safely
+  const formatDate = (dateField: any): string => {
+    try {
+      const date = safeDate(dateField);
+      return date.toLocaleDateString();
+    } catch (error) {
+      console.error("Error formatting date:", error);
+      return "Date unavailable";
+    }
+  };
 
   const publicAnnouncements =
     announcements?.filter((announcement) => announcement.isPublic) || [];
+
   const upcomingEvents =
-    events?.filter((event) => new Date(event.date) > new Date()) || [];
+    events?.filter((event) => {
+      const eventDate = safeDate(event.date);
+      const now = new Date();
+      return eventDate > now;
+    }) || [];
 
   const handleSignUp = () => {
     router.push("/auth/register");
@@ -101,7 +135,7 @@ export default function LandingPage() {
                     {announcement.content}
                   </p>
                   <p className="text-sm text-gray-500 mt-2">
-                    {new Date(announcement.createdAt).toLocaleDateString()}
+                    {formatDate(announcement.createdAt)}
                   </p>
                 </div>
               </Card>
@@ -130,6 +164,7 @@ export default function LandingPage() {
                 <EventCard
                   key={event.id}
                   {...event}
+                  date={safeDate(event.date)}
                   onRegister={() => handleEventRegistration(event.id)}
                 />
               ))
