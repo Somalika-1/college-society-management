@@ -1,65 +1,77 @@
-// src/hooks/useAnnouncements.ts
-"use client"
-import { useState, useEffect } from 'react';
-import { 
-  getAnnouncements, 
-  createAnnouncement, 
-  deleteAnnouncement 
-} from '@/firebase/services/announcements';
-import { Announcement } from '@/types';
+"use client";
+import { useState, useEffect, useMemo } from "react";
+import {
+  collection,
+  onSnapshot,
+  addDoc,
+  deleteDoc,
+  doc,
+  getFirestore,
+  serverTimestamp,
+  query,
+  orderBy,
+} from "firebase/firestore";
+import { Announcement } from "@/types";
 
 export function useAnnouncements() {
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const db = getFirestore();
+
+  // Ensure the Firestore query remains stable
+  const announcementsQuery = useMemo(
+    () => query(collection(db, "announcements"), orderBy("createdAt", "desc")),
+    [db]
+  );
 
   useEffect(() => {
-    fetchAnnouncements();
-  }, []);
+    setLoading(true);
 
-  const fetchAnnouncements = async () => {
-    try {
-      setLoading(true);
-      const data = await getAnnouncements();
-      setAnnouncements(data);
-      setError(null);
-    } catch (err) {
-      setError('Failed to fetch announcements');
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
+    const unsubscribe = onSnapshot(
+      announcementsQuery,
+      (snapshot) => {
+        const data = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        })) as Announcement[];
 
-  const addAnnouncement = async (announcementData: Omit<Announcement, 'id'>) => {
+        setAnnouncements(data);
+        setLoading(false);
+        setError(null);
+      },
+      (err) => {
+        console.error("Error fetching announcements:", err);
+        setError("Failed to fetch announcements");
+        setLoading(false);
+      }
+    );
+
+    return () => unsubscribe(); // Cleanup listener on unmount
+  }, [announcementsQuery]);
+
+  const addAnnouncement = async (announcementData: Omit<Announcement, "id" | "createdAt">) => {
     try {
-      setLoading(true);
-      const newAnnouncement = await createAnnouncement(announcementData);
-      setAnnouncements(prev => [...prev, newAnnouncement]);
-      setError(null);
-      return newAnnouncement;
+      const newDoc = await addDoc(collection(db, "announcements"), {
+        ...announcementData,
+        createdAt: serverTimestamp(),
+      });
+      return { id: newDoc.id, ...announcementData, createdAt: new Date() };
     } catch (err) {
-      setError('Failed to create announcement');
-      console.error(err);
+      console.error("Error creating announcement:", err);
+      setError("Failed to create announcement");
       return null;
-    } finally {
-      setLoading(false);
     }
   };
 
   const removeAnnouncement = async (id: string) => {
     try {
-      setLoading(true);
-      await deleteAnnouncement(id);
-      setAnnouncements(prev => prev.filter(announcement => announcement.id !== id));
-      setError(null);
+      await deleteDoc(doc(db, "announcements", id));
       return true;
     } catch (err) {
-      setError('Failed to delete announcement');
-      console.error(err);
+      console.error("Error deleting announcement:", err);
+      setError("Failed to delete announcement");
       return false;
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -69,6 +81,6 @@ export function useAnnouncements() {
     error,
     addAnnouncement,
     removeAnnouncement,
-    refreshAnnouncements: fetchAnnouncements,
   };
 }
+// [FILEPATH] src/hooks/useAnnouncements.ts [/FILEPATH]

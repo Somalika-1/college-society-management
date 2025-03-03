@@ -110,7 +110,9 @@ export default function LandingPage() {
         </div>
         <div className="text-center mt-8">
           <Link href="/announcements">
-            <Button variant="secondary">View All Announcements</Button>
+            <Button variant="secondary" className="bg-gray-700 text-white">
+              View All Announcements
+            </Button>
           </Link>
         </div>
       </section>

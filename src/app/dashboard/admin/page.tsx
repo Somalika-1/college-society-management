@@ -17,6 +17,7 @@ import {
   getDocs,
   getFirestore,
   doc,
+  getDoc,
   updateDoc,
   deleteDoc,
   addDoc,
@@ -55,6 +56,7 @@ interface Society {
   members: string[];
   createdAt: Date;
   status: "active" | "inactive";
+  events?: string[];
 }
 
 interface User {
@@ -73,7 +75,10 @@ interface Event {
   date: Date;
   societyId: string;
   status: "upcoming" | "active" | "completed";
-  attendees: string[];
+  venue?: string;
+  type?: string;
+  maxParticipants?: number;
+  registeredParticipants?: string[];
 }
 
 interface Announcement {
@@ -81,9 +86,23 @@ interface Announcement {
   title: string;
   content: string;
   societyId: string;
+  authorId: string;
   createdAt: Date;
-  createdBy: string;
-  isPublished: boolean;
+  updatedAt?: Date;
+  isPublic: boolean;
+  status: string;
+  priority: string;
+  metadata?: {
+    comments: number;
+    likes: number;
+    views: number;
+  };
+  tags?: string[];
+  targetAudience?: {
+    roles: string[];
+    societies: string[];
+    years: number[];
+  };
 }
 
 // Form interfaces
@@ -106,13 +125,19 @@ interface EventForm {
   date: string;
   societyId: string;
   status: string;
+  venue: string;
+  type: string;
+  maxParticipants: number;
 }
 
 interface AnnouncementForm {
   title: string;
   content: string;
   societyId: string;
-  isPublished: boolean;
+  isPublic: boolean;
+  status: string;
+  priority: string;
+  tags: string;
 }
 
 export default function AdminDashboard() {
@@ -147,12 +172,18 @@ export default function AdminDashboard() {
     date: "",
     societyId: "",
     status: "upcoming",
+    venue: "",
+    type: "social",
+    maxParticipants: 100,
   });
   const [announcementForm, setAnnouncementForm] = useState<AnnouncementForm>({
     title: "",
     content: "",
     societyId: "",
-    isPublished: false,
+    isPublic: false,
+    status: "draft",
+    priority: "medium",
+    tags: "",
   });
 
   // Dialog states
@@ -196,6 +227,7 @@ export default function AdminDashboard() {
         id: doc.id,
         ...doc.data(),
         createdAt: doc.data().createdAt?.toDate(),
+        updatedAt: doc.data().updatedAt?.toDate(),
       })) as Announcement[];
       setAnnouncements(announcementsData);
     } catch (err) {
@@ -213,6 +245,8 @@ export default function AdminDashboard() {
   }, [user]);
 
   // CRUD Operations
+
+  // Split the society creation into two steps
   const handleSocietySubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -223,12 +257,27 @@ export default function AdminDashboard() {
           updatedAt: new Date(),
         });
       } else {
-        await addDoc(collection(db, "societies"), {
-          ...societyForm,
+        // Create society without requiring a head
+        const societyRef = await addDoc(collection(db, "societies"), {
+          name: societyForm.name,
+          description: societyForm.description,
+          headId: null, // Initially null
           members: [],
           createdAt: new Date(),
           status: "active",
         });
+
+        // If a head was selected during creation, update the user and society
+        if (societyForm.headId) {
+          await updateDoc(doc(db, "societies", societyRef.id), {
+            headId: societyForm.headId,
+          });
+
+          await updateDoc(doc(db, "users", societyForm.headId), {
+            role: "society_head",
+            societyId: societyRef.id,
+          });
+        }
       }
       await fetchData();
       setShowSocietyDialog(false);
@@ -237,6 +286,37 @@ export default function AdminDashboard() {
       setError("Failed to save society");
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  // Add function to assign/change society head
+  const assignSocietyHead = async (societyId: string, userId: string) => {
+    try {
+      // Get the current society data
+      const societyDoc = await getDoc(doc(db, "societies", societyId));
+      const society = societyDoc.data() as Society;
+
+      // If there was a previous head, update their role
+      if (society.headId) {
+        await updateDoc(doc(db, "users", society.headId), {
+          role: "member",
+        });
+      }
+
+      // Update the new head
+      await updateDoc(doc(db, "users", userId), {
+        role: "society_head",
+        societyId: societyId,
+      });
+
+      // Update the society
+      await updateDoc(doc(db, "societies", societyId), {
+        headId: userId,
+      });
+
+      await fetchData();
+    } catch (err) {
+      setError("Failed to assign society head");
     }
   };
 
@@ -273,7 +353,7 @@ export default function AdminDashboard() {
       const eventData = {
         ...eventForm,
         date: new Date(eventForm.date),
-        attendees: [],
+        registeredParticipants: [],
       };
 
       if (editMode && editId) {
@@ -282,10 +362,21 @@ export default function AdminDashboard() {
           updatedAt: new Date(),
         });
       } else {
-        await addDoc(collection(db, "events"), {
+        const eventRef = await addDoc(collection(db, "events"), {
           ...eventData,
           createdAt: new Date(),
         });
+
+        // Update the society's events array
+        const societyRef = doc(db, "societies", eventForm.societyId);
+        const societyDoc = await getDoc(societyRef);
+        if (societyDoc.exists()) {
+          const societyData = societyDoc.data();
+          const events = societyData.events || [];
+          await updateDoc(societyRef, {
+            events: [...events, eventRef.id],
+          });
+        }
       }
       await fetchData();
       setShowEventDialog(false);
@@ -295,6 +386,9 @@ export default function AdminDashboard() {
         date: "",
         societyId: "",
         status: "upcoming",
+        venue: "",
+        type: "social",
+        maxParticipants: 100,
       });
     } catch (err) {
       setError("Failed to save event");
@@ -309,16 +403,43 @@ export default function AdminDashboard() {
     e.preventDefault();
     setIsSubmitting(true);
     try {
+      // Process tags
+      const tagsArray = announcementForm.tags
+        .split(",")
+        .map((tag) => tag.trim())
+        .filter((tag) => tag.length > 0);
+
+      const announcementData = {
+        title: announcementForm.title,
+        content: announcementForm.content,
+        societyId: announcementForm.societyId,
+        isPublic: announcementForm.isPublic, // Changed from isPublished to isPublic
+        status: announcementForm.status,
+        priority: announcementForm.priority,
+        tags: tagsArray,
+        metadata: {
+          comments: 0,
+          likes: 0,
+          views: 0,
+        },
+        targetAudience: {
+          roles: ["member"],
+          societies: [announcementForm.societyId],
+          years: [1, 2, 3, 4],
+        },
+      };
+
       if (editMode && editId) {
         await updateDoc(doc(db, "announcements", editId), {
-          ...announcementForm,
+          ...announcementData,
           updatedAt: new Date(),
         });
       } else {
         await addDoc(collection(db, "announcements"), {
-          ...announcementForm,
+          ...announcementData,
+          authorId: user?.id || "",
           createdAt: new Date(),
-          createdBy: user?.id || "",
+          updatedAt: new Date(),
         });
       }
       await fetchData();
@@ -327,7 +448,10 @@ export default function AdminDashboard() {
         title: "",
         content: "",
         societyId: "",
-        isPublished: false,
+        isPublic: false,
+        status: "draft",
+        priority: "medium",
+        tags: "",
       });
     } catch (err) {
       setError("Failed to save announcement");
@@ -466,6 +590,9 @@ export default function AdminDashboard() {
                         Members: {society.members?.length || 0}
                       </p>
                       <p className="text-xs text-gray-400">
+                        Events: {society.events?.length || 0}
+                      </p>
+                      <p className="text-xs text-gray-400">
                         Status: {society.status}
                       </p>
                     </div>
@@ -537,11 +664,12 @@ export default function AdminDashboard() {
                     }
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Select Head" />
+                      <SelectValue placeholder="Select Head (Optional)" />
                     </SelectTrigger>
                     <SelectContent>
+                      <SelectItem value="none">No head assigned</SelectItem>
                       {users
-                        .filter((u) => u.role === "society_head")
+                        .filter((u) => !u.societyId || u.societyId === editId)
                         .map((user) => (
                           <SelectItem key={user.id} value={user.id}>
                             {user.name}
@@ -758,6 +886,9 @@ export default function AdminDashboard() {
                     date: "",
                     societyId: "",
                     status: "upcoming",
+                    venue: "",
+                    type: "social",
+                    maxParticipants: 100,
                   });
                   setShowEventDialog(true);
                 }}
@@ -785,8 +916,17 @@ export default function AdminDashboard() {
                               ?.name
                           }
                         </p>
+                        <p>Venue: {event.venue || "TBD"}</p>
                         <p>Status: {event.status}</p>
-                        <p>Attendees: {event.attendees?.length || 0}</p>
+                        <p>Type: {event.type || "Standard"}</p>
+                        <p>
+                          Max Participants:{" "}
+                          {event.maxParticipants || "Unlimited"}
+                        </p>
+                        <p>
+                          Registered:{" "}
+                          {event.registeredParticipants?.length || 0}
+                        </p>
                       </div>
                     </div>
                     <div className="flex space-x-2">
@@ -802,6 +942,9 @@ export default function AdminDashboard() {
                             date: event.date.toISOString().split("T")[0],
                             societyId: event.societyId,
                             status: event.status,
+                            venue: event.venue || "",
+                            type: event.type || "social",
+                            maxParticipants: event.maxParticipants || 100,
                           });
                           setShowEventDialog(true);
                         }}
@@ -857,6 +1000,24 @@ export default function AdminDashboard() {
                     }
                     required
                   />
+                  <Input
+                    placeholder="Venue"
+                    value={eventForm.venue}
+                    onChange={(e) =>
+                      setEventForm({ ...eventForm, venue: e.target.value })
+                    }
+                  />
+                  <Input
+                    type="number"
+                    placeholder="Max Participants"
+                    value={eventForm.maxParticipants.toString()}
+                    onChange={(e) =>
+                      setEventForm({
+                        ...eventForm,
+                        maxParticipants: parseInt(e.target.value) || 100,
+                      })
+                    }
+                  />
                   <Select
                     value={eventForm.societyId}
                     onValueChange={(value) =>
@@ -889,6 +1050,23 @@ export default function AdminDashboard() {
                       <SelectItem value="completed">Completed</SelectItem>
                     </SelectContent>
                   </Select>
+                  <Select
+                    value={eventForm.type}
+                    onValueChange={(value) =>
+                      setEventForm({ ...eventForm, type: value })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select Event Type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="social">Social</SelectItem>
+                      <SelectItem value="academic">Academic</SelectItem>
+                      <SelectItem value="cultural">Cultural</SelectItem>
+                      <SelectItem value="sports">Sports</SelectItem>
+                      <SelectItem value="workshop">Workshop</SelectItem>
+                    </SelectContent>
+                  </Select>
                   <Button type="submit" disabled={isSubmitting}>
                     {isSubmitting
                       ? "Saving..."
@@ -915,7 +1093,10 @@ export default function AdminDashboard() {
                     title: "",
                     content: "",
                     societyId: "",
-                    isPublished: false,
+                    isPublic: false,
+                    status: "draft",
+                    priority: "medium",
+                    tags: "",
                   });
                   setShowAnnouncementDialog(true);
                 }}
@@ -945,7 +1126,10 @@ export default function AdminDashboard() {
                               title: announcement.title,
                               content: announcement.content,
                               societyId: announcement.societyId,
-                              isPublished: announcement.isPublished,
+                              isPublic: announcement.isPublic,
+                              status: announcement.status,
+                              priority: announcement.priority,
+                              tags: announcement.tags?.join(", ") || "",
                             });
                             setShowAnnouncementDialog(true);
                           }}
@@ -975,10 +1159,22 @@ export default function AdminDashboard() {
                       <p>
                         Created: {announcement.createdAt.toLocaleDateString()}
                       </p>
+                      <p>Status: {announcement.status}</p>
                       <p>
-                        Status:{" "}
-                        {announcement.isPublished ? "Published" : "Draft"}
+                        Visibility:{" "}
+                        {announcement.isPublic ? "Public" : "Private"}
                       </p>
+                      <p>Priority: {announcement.priority}</p>
+                      {announcement.tags && announcement.tags.length > 0 && (
+                        <p>Tags: {announcement.tags.join(", ")}</p>
+                      )}
+                      {announcement.metadata && (
+                        <p>
+                          Engagement: {announcement.metadata.views} views,{" "}
+                          {announcement.metadata.likes} likes,{" "}
+                          {announcement.metadata.comments} comments
+                        </p>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -1039,24 +1235,68 @@ export default function AdminDashboard() {
                       ))}
                     </SelectContent>
                   </Select>
+                  <Input
+                    placeholder="Tags (comma-separated)"
+                    value={announcementForm.tags}
+                    onChange={(e) =>
+                      setAnnouncementForm({
+                        ...announcementForm,
+                        tags: e.target.value,
+                      })
+                    }
+                  />
+                  <Select
+                    value={announcementForm.status}
+                    onValueChange={(value) =>
+                      setAnnouncementForm({
+                        ...announcementForm,
+                        status: value,
+                      })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select Status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="draft">Draft</SelectItem>
+                      <SelectItem value="published">Published</SelectItem>
+                      <SelectItem value="archived">Archived</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Select
+                    value={announcementForm.priority}
+                    onValueChange={(value) =>
+                      setAnnouncementForm({
+                        ...announcementForm,
+                        priority: value,
+                      })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select Priority" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="low">Low</SelectItem>
+                      <SelectItem value="medium">Medium</SelectItem>
+                      <SelectItem value="high">High</SelectItem>
+                      <SelectItem value="urgent">Urgent</SelectItem>
+                    </SelectContent>
+                  </Select>
                   <div className="flex items-center space-x-2">
                     <input
                       type="checkbox"
-                      id="isPublished"
-                      checked={announcementForm.isPublished}
+                      id="isPublic"
+                      checked={announcementForm.isPublic}
                       onChange={(e) =>
                         setAnnouncementForm({
                           ...announcementForm,
-                          isPublished: e.target.checked,
+                          isPublic: e.target.checked,
                         })
                       }
                       className="h-4 w-4 rounded border-gray-300"
                     />
-                    <label
-                      htmlFor="isPublished"
-                      className="text-sm text-gray-600"
-                    >
-                      Publish immediately
+                    <label htmlFor="isPublic" className="text-sm text-gray-600">
+                      Make public
                     </label>
                   </div>
                   <Button type="submit" disabled={isSubmitting}>
