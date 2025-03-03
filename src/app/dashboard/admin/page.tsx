@@ -251,29 +251,49 @@ export default function AdminDashboard() {
     e.preventDefault();
     setIsSubmitting(true);
     try {
+      // Process headId - if it's "none", set it to null
+      const processedHeadId =
+        societyForm.headId === "none" ? null : societyForm.headId || null;
+
       if (editMode && editId) {
-        await updateDoc(doc(db, "societies", editId), {
-          ...societyForm,
+        // For editing existing society
+        const updateData = {
+          name: societyForm.name,
+          description: societyForm.description,
+          headId: processedHeadId,
           updatedAt: new Date(),
-        });
+        };
+
+        await updateDoc(doc(db, "societies", editId), updateData);
+        console.log("Society updated successfully:", updateData);
       } else {
-        // Create society without requiring a head
-        const societyRef = await addDoc(collection(db, "societies"), {
+        // For creating new society
+        const newSocietyData = {
           name: societyForm.name,
           description: societyForm.description,
           headId: null, // Initially null
           members: [],
+          events: [],
           createdAt: new Date(),
           status: "active",
-        });
+        };
 
-        // If a head was selected during creation, update the user and society
-        if (societyForm.headId) {
+        console.log("Creating society with data:", newSocietyData);
+        const societyRef = await addDoc(
+          collection(db, "societies"),
+          newSocietyData
+        );
+        console.log("Society created with ID:", societyRef.id);
+
+        // If a head was selected and not "none", update the user and society
+        if (processedHeadId) {
+          console.log("Updating society with head:", processedHeadId);
           await updateDoc(doc(db, "societies", societyRef.id), {
-            headId: societyForm.headId,
+            headId: processedHeadId,
           });
 
-          await updateDoc(doc(db, "users", societyForm.headId), {
+          console.log("Updating user role to society_head");
+          await updateDoc(doc(db, "users", processedHeadId), {
             role: "society_head",
             societyId: societyRef.id,
           });
@@ -283,7 +303,8 @@ export default function AdminDashboard() {
       setShowSocietyDialog(false);
       setSocietyForm({ name: "", description: "", headId: "" });
     } catch (err) {
-      setError("Failed to save society");
+      console.error("Error saving society:", err);
+      setError(`Failed to save society: ${error + "Unknown error"}`);
     } finally {
       setIsSubmitting(false);
     }
@@ -325,22 +346,79 @@ export default function AdminDashboard() {
     setIsSubmitting(true);
     try {
       if (editMode && editId) {
+        // Get the current user data to check if society changed
+        const userDoc = await getDoc(doc(db, "users", editId));
+        const currentUserData = userDoc.data();
+        const oldSocietyId = currentUserData?.societyId;
+
+        // Update the user
         await updateDoc(doc(db, "users", editId), {
           ...userForm,
           updatedAt: new Date(),
         });
+
+        // If the user's society changed, we need to update both societies' member arrays
+        if (oldSocietyId !== userForm.societyId) {
+          // Remove from old society if there was one
+          if (oldSocietyId) {
+            const oldSocietyDoc = await getDoc(
+              doc(db, "societies", oldSocietyId)
+            );
+            if (oldSocietyDoc.exists()) {
+              const oldSociety = oldSocietyDoc.data();
+              const updatedMembers = (oldSociety.members || []).filter(
+                (id: string) => id !== editId
+              );
+              await updateDoc(doc(db, "societies", oldSocietyId), {
+                members: updatedMembers,
+              });
+            }
+          }
+
+          // Add to new society if there is one
+          if (userForm.societyId) {
+            const societyDoc = await getDoc(
+              doc(db, "societies", userForm.societyId)
+            );
+            if (societyDoc.exists()) {
+              const society = societyDoc.data();
+              const members = society.members || [];
+              if (!members.includes(editId)) {
+                await updateDoc(doc(db, "societies", userForm.societyId), {
+                  members: [...members, editId],
+                });
+              }
+            }
+          }
+        }
       } else {
-        await addDoc(collection(db, "users"), {
+        // Create a new user
+        const userRef = await addDoc(collection(db, "users"), {
           ...userForm,
           isActive: true,
           createdAt: new Date(),
         });
+
+        // If the user is assigned to a society, add them to that society's members array
+        if (userForm.societyId) {
+          const societyDoc = await getDoc(
+            doc(db, "societies", userForm.societyId)
+          );
+          if (societyDoc.exists()) {
+            const society = societyDoc.data();
+            const members = society.members || [];
+            await updateDoc(doc(db, "societies", userForm.societyId), {
+              members: [...members, userRef.id],
+            });
+          }
+        }
       }
       await fetchData();
       setShowUserDialog(false);
       setUserForm({ name: "", email: "", role: "member", societyId: "" });
     } catch (err) {
-      setError("Failed to save user");
+      console.error("Error saving user:", err);
+      setError(`Failed to save user: ${error || "Unknown error"}`);
     } finally {
       setIsSubmitting(false);
     }
@@ -468,13 +546,44 @@ export default function AdminDashboard() {
       setError("Failed to delete society");
     }
   };
-
   const deleteUser = async (id: string) => {
     try {
+      // First get the user to check if they belong to a society
+      const userDoc = await getDoc(doc(db, "users", id));
+
+      if (userDoc.exists()) {
+        const userData = userDoc.data();
+
+        // If user belongs to a society, remove them from members
+        if (userData.societyId) {
+          const societyRef = doc(db, "societies", userData.societyId);
+          const societyDoc = await getDoc(societyRef);
+
+          if (societyDoc.exists()) {
+            const societyData = societyDoc.data();
+            const updatedMembers = (societyData.members || []).filter(
+              (memberId: string) => memberId !== id
+            );
+
+            // Update the society's members array
+            await updateDoc(societyRef, { members: updatedMembers });
+
+            // If user was the head of the society, update headId to null
+            if (societyData.headId === id) {
+              await updateDoc(societyRef, { headId: null });
+            }
+          }
+        }
+      }
+
+      // Now delete the user
       await deleteDoc(doc(db, "users", id));
+
+      // Refresh data
       await fetchData();
     } catch (err) {
-      setError("Failed to delete user");
+      console.error("Error deleting user:", err);
+      setError(`Failed to delete user: ${error || "Unknown error"}`);
     }
   };
 
