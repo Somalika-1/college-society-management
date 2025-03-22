@@ -9,7 +9,9 @@ export default function Card({
   className?: string;
 }) {
   return (
-    <div className={`bg-white rounded-lg shadow-md p-6 ${className}`}>
+    <div
+      className={`bg-white rounded-lg shadow-md capitalize p-6 ${className}`}
+    >
       {children}
     </div>
   );

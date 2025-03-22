@@ -1,6 +1,5 @@
-// src/app/announcements/page.tsx
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Bell, Search, Filter, Trash2, Edit } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useAnnouncements } from "@/hooks/useAnnouncements";
@@ -21,9 +20,14 @@ export default function AnnouncementsPage() {
     refreshAnnouncements,
   } = useAnnouncements();
 
-  useEffect(() => {
+  // Use useCallback to prevent infinite loops in useEffect
+  const refreshData = useCallback(() => {
     refreshAnnouncements();
-  }, [refreshAnnouncements]);
+  }, []);
+
+  useEffect(() => {
+    refreshData();
+  }, [refreshData]);
 
   const filteredAnnouncements = announcements.filter((announcement) => {
     const matchesSearch = searchQuery
@@ -50,6 +54,7 @@ export default function AnnouncementsPage() {
   const handleDelete = async (id: string) => {
     if (window.confirm("Are you sure you want to delete this announcement?")) {
       await removeAnnouncement(id);
+      refreshData();
     }
   };
 
@@ -66,7 +71,7 @@ export default function AnnouncementsPage() {
       <div className="text-center py-8 text-red-600">
         {error}
         <button
-          onClick={refreshAnnouncements}
+          onClick={refreshData}
           className="ml-2 text-blue-600 hover:underline"
         >
           Retry
@@ -168,6 +173,16 @@ export default function AnnouncementsPage() {
             </div>
           ))
         )}
+      </div>
+
+      {/* View All Announcements Button */}
+      <div className="text-center mt-8">
+        <button
+          onClick={refreshData}
+          className="bg-gray-700 text-white px-6 py-3 rounded-md hover:bg-gray-800"
+        >
+          Refresh Announcements
+        </button>
       </div>
     </div>
   );

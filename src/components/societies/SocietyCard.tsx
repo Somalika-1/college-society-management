@@ -18,7 +18,7 @@ export default function SocietyCard({
   onViewDetails,
 }: SocietyCardProps) {
   return (
-    <div className="bg-white rounded-xl shadow-lg overflow-hidden transition hover:shadow-2xl">
+    <div className="bg-white rounded-xl capitalize shadow-lg overflow-hidden transition hover:shadow-2xl">
       <div className="p-6">
         <h3 className="text-xl font-bold mb-2 text-gray-900">{name}</h3>
         <p className="text-gray-600 mb-4 line-clamp-2">{description}</p>

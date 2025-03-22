@@ -19,6 +19,10 @@ export default function LandingPage() {
   const { announcements, loading: announcementsLoading } = useAnnouncements();
   const { events, loading: eventsLoading } = useEvents();
   const { societies, loading: societiesLoading } = useSocieties();
+  console.log("All Events from Firebase:", events);
+  console.log("All Societies from Firebase:", societies);
+  console.log("All Announcements from Firebase:", announcements);
+
   // Helper function to safely convert Firestore timestamps or date strings
   const safeDate = (dateField: any): Date => {
     if (!dateField) return new Date(); // Default to current date if field is missing
@@ -55,8 +59,7 @@ export default function LandingPage() {
   const upcomingEvents =
     events?.filter((event) => {
       const eventDate = safeDate(event.date);
-      const now = new Date();
-      return eventDate > now;
+      return eventDate > new Date(); // Only future events
     }) || [];
 
   // const handleSignUp = () => {
@@ -65,6 +68,11 @@ export default function LandingPage() {
 
   const handleLogin = () => {
     router.push("/auth/login");
+  };
+
+  // Add a new handler for viewing event details
+  const handleViewEvent = (eventId: string) => {
+    router.push(`/events/${eventId}`);
   };
 
   const handleEventRegistration = (eventId: string) => {
@@ -166,9 +174,17 @@ export default function LandingPage() {
                   {...event}
                   date={safeDate(event.date)}
                   onRegister={() => handleEventRegistration(event.id)}
+                  onViewDetails={() => handleViewEvent(event.id)}
                 />
               ))
           )}
+        </div>
+        <div className="text-center mt-8">
+          <Link href="/events">
+            <Button variant="secondary" className="bg-gray-700 text-white">
+              View All Events
+            </Button>
+          </Link>
         </div>
       </section>
 

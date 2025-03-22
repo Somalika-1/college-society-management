@@ -1,4 +1,3 @@
-// src/components/events/EventCard.tsx
 import React from "react";
 import { Calendar, MapPin, Users } from "lucide-react";
 
@@ -16,6 +15,7 @@ interface Event {
 interface EventCardProps extends Omit<Event, "registeredParticipants"> {
   registeredParticipants: string[];
   onRegister?: () => void;
+  onViewDetails?: () => void;
 }
 
 export default function EventCard({
@@ -26,15 +26,21 @@ export default function EventCard({
   registeredParticipants,
   maxParticipants,
   onRegister,
+  onViewDetails,
 }: EventCardProps) {
   const participantCount = registeredParticipants.length;
   const isFullyBooked = participantCount >= maxParticipants;
 
   return (
-    <div className="bg-white rounded-lg shadow-md overflow-hidden">
+    <div
+      className="bg-white rounded-lg capitalize shadow-md overflow-hidden transition-all duration-300 ease-in-out hover:shadow-xl transform hover:-translate-y-1"
+      onClick={onViewDetails}
+    >
       <div className="p-6">
-        <h3 className="text-xl font-semibold mb-2">{title}</h3>
-        <p className="text-gray-600 mb-4">{description}</p>
+        <h3 className="text-xl capitalize font-semibold mb-2 text-blue-800 transition-colors duration-300 hover:text-blue-600">
+          {title}
+        </h3>
+        <p className="text-gray-600  mb-4">{description}</p>
 
         <div className="space-y-2">
           <div className="flex items-center text-gray-600">
@@ -57,12 +63,15 @@ export default function EventCard({
 
         {onRegister && (
           <button
-            onClick={onRegister}
+            onClick={(e) => {
+              e.stopPropagation(); // Prevent triggering the card's onClick
+              onRegister();
+            }}
             disabled={isFullyBooked}
-            className={`mt-4 w-full py-2 px-4 rounded-md ${
+            className={`mt-4 w-full py-2 px-4 rounded-md transition-all duration-300 ${
               isFullyBooked
                 ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                : "bg-blue-600 text-white hover:bg-blue-700"
+                : "bg-blue-600 text-white hover:bg-blue-700 hover:shadow-md"
             }`}
           >
             {isFullyBooked ? "Fully Booked" : "Register Now"}
