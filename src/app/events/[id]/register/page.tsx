@@ -9,7 +9,7 @@ const RegisterForEvent = () => {
   const params = useParams();
   const eventId = params.id as string;
   const router = useRouter();
-  const [form, setForm] = useState({ name: "", email: "" });
+  const [form, setForm] = useState({ name: "", email: "", phone: "" });
   const [event, setEvent] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [formSubmitting, setFormSubmitting] = useState(false);
@@ -53,7 +53,14 @@ const RegisterForEvent = () => {
         return;
       }
 
-      // Fetch latest event data to check available slots and duplicate registrations
+      // Phone number validation
+      if (!/^\d{10}$/.test(form.phone)) {
+        setError("Please enter a valid 10-digit phone number.");
+        setFormSubmitting(false);
+        return;
+      }
+
+      // Fetch latest event data
       const eventRef = doc(db, "events", eventId);
       const eventSnap = await getDoc(eventRef);
 
@@ -83,14 +90,15 @@ const RegisterForEvent = () => {
         return;
       }
 
-      // Create new participant object with timestamp
+      // Create new participant object with phone number
       const newParticipant = {
         name: form.name,
         email: form.email,
+        phone: form.phone, // ✅ Added phone number
         registeredAt: new Date(),
       };
 
-      // Update only the registeredParticipants field using arrayUnion
+      // Update Firestore document
       await updateDoc(eventRef, {
         registeredParticipants: arrayUnion(newParticipant),
       });
@@ -98,30 +106,29 @@ const RegisterForEvent = () => {
       // Success message and redirect
       setError("");
 
-      // Show success message and redirect after a delay
+      // Show success message
       const successDiv = document.createElement("div");
       successDiv.className =
         "fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50";
       successDiv.innerHTML = `
-  <div class="bg-white p-6 rounded-lg shadow-lg max-w-md w-full">
-    <div class="text-center">
-      <svg class="mx-auto h-12 w-12 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-      </svg>
-      <h2 class="mt-2 text-xl font-bold text-gray-900">Registration Successful!</h2>
-      <p class="mt-2 text-gray-600">You have been registered for ${event.title}.</p>
-      <p class="mt-2 text-sm text-gray-500">Redirecting to event page...</p>
-    </div>
-  </div>
-`;
+        <div class="bg-white p-6 rounded-lg shadow-lg max-w-md w-full">
+          <div class="text-center">
+            <svg class="mx-auto h-12 w-12 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+            </svg>
+            <h2 class="mt-2 text-xl font-bold text-gray-900">Registration Successful!</h2>
+            <p class="mt-2 text-gray-600">You have been registered for ${event.title}.</p>
+            <p class="mt-2 text-sm text-gray-500">Redirecting to event page...</p>
+          </div>
+        </div>
+      `;
 
       document.body.appendChild(successDiv);
 
       setTimeout(() => {
-        // Remove success popup before redirecting
         document.body.removeChild(successDiv);
         router.push(`/events/${eventId}`);
-      }, 2000);
+      }, 1500);
     } catch (error) {
       console.error("Error registering for event:", error);
       setError("Failed to register. Please try again.");
@@ -266,6 +273,30 @@ const RegisterForEvent = () => {
                 />
                 <p className="mt-1 text-xs text-gray-500">
                   Use your SRM student email (@stu.srmuniversity.ac.in)
+                </p>
+              </div>
+
+              <div>
+                <label
+                  htmlFor="phone"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
+                  Phone Number
+                </label>
+                <input
+                  id="phone"
+                  type="text"
+                  name="phone"
+                  placeholder="Enter your phone number"
+                  pattern="\d{10}"
+                  maxLength={10}
+                  onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                  required
+                  className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+                  disabled={formSubmitting}
+                />
+                <p className="mt-1 text-xs text-gray-500">
+                  Enter a valid 10-digit phone number.
                 </p>
               </div>
 

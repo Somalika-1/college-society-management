@@ -57,13 +57,25 @@ interface Member {
   isActive: boolean;
 }
 
+interface RegisteredParticipant {
+  name: string;
+  email: string;
+  phone: number;
+  registeredAt: Date;
+}
+
 interface Event {
   id: string;
   title: string;
   description: string;
   date: Date;
   status: "upcoming" | "active" | "completed";
-  attendees: string[];
+  //  Keeping this for backward compatibility
+  registeredParticipants: RegisteredParticipant[]; // New field
+  maxParticipants: number;
+  venue: string;
+  type: string;
+  //created at i dint take
 }
 
 interface Announcement {
@@ -104,7 +116,8 @@ export default function SocietyDashboard() {
     title: "",
     description: "",
     date: "",
-    status: "upcoming" as const,
+    status: "upcoming" as "upcoming" | "active" | "completed",
+    maxParticipants: 0, // New field
   });
 
   const [announcementForm, setAnnouncementForm] = useState({
@@ -148,16 +161,21 @@ export default function SocietyDashboard() {
         setMembersCount(membersSnapshot.size);
 
         // Fetch events
+        // Fetch events with participants
         const eventsQuery = query(
           collection(db, "events"),
           where("societyId", "==", user.societyId)
         );
         const eventsSnapshot = await getDocs(eventsQuery);
-        const eventsData = eventsSnapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-          date: doc.data().date?.toDate(),
-        })) as Event[];
+        const eventsData = eventsSnapshot.docs.map((doc) => {
+          const eventData = doc.data();
+          return {
+            id: doc.id,
+            ...eventData,
+            date: eventData.date?.toDate(),
+            registeredParticipants: eventData.registeredParticipants || [],
+          };
+        }) as Event[];
         setEvents(eventsData);
 
         // Fetch announcements
@@ -229,7 +247,6 @@ export default function SocietyDashboard() {
     }
   };
 
-  // Handle event operations
   const handleEventSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -238,7 +255,8 @@ export default function SocietyDashboard() {
         ...eventForm,
         societyId: user?.societyId,
         date: new Date(eventForm.date),
-        attendees: [],
+        maxParticipants: Number(eventForm.maxParticipants), // Ensure it's a number
+        registeredParticipants: [],
       };
 
       if (editMode && editId) {
@@ -254,7 +272,7 @@ export default function SocietyDashboard() {
         });
       }
 
-      // Refresh events list
+      // Refresh event list
       const eventsQuery = query(
         collection(db, "events"),
         where("societyId", "==", user?.societyId)
@@ -264,6 +282,7 @@ export default function SocietyDashboard() {
         id: doc.id,
         ...doc.data(),
         date: doc.data().date?.toDate(),
+        registeredParticipants: doc.data().registeredParticipants || [],
       })) as Event[];
       setEvents(eventsData);
 
@@ -273,6 +292,7 @@ export default function SocietyDashboard() {
         description: "",
         date: "",
         status: "upcoming",
+        maxParticipants: 0,
       });
     } catch (error) {
       setError("Failed to save event");
@@ -390,7 +410,9 @@ export default function SocietyDashboard() {
                     description: "",
                     date: "",
                     status: "upcoming",
+                    maxParticipants: 0,
                   });
+
                   setShowEventDialog(true);
                 }}
               >
@@ -421,6 +443,7 @@ export default function SocietyDashboard() {
                               .toISOString()
                               .split("T")[0],
                             status: event.status,
+                            maxParticipants: event.maxParticipants || 0,
                           });
                           setShowEventDialog(true);
                         }}
@@ -442,29 +465,73 @@ export default function SocietyDashboard() {
                       {new Date(event.date).toLocaleDateString()}
                     </span>
                     <span
-                      className={`px-2 py-1 rounded-full text-xs capitalize
-                      ${
+                      className={`px-2 py-1 rounded-full text-xs capitalize ${
                         event.status === "upcoming"
                           ? "bg-blue-100 text-blue-800"
                           : ""
-                      }
-                      ${
+                      } ${
                         event.status === "active"
                           ? "bg-green-100 text-green-800"
                           : ""
-                      }
-                      ${
+                      } ${
                         event.status === "completed"
                           ? "bg-gray-100 text-gray-800"
                           : ""
-                      }
-                    `}
+                      }`}
                     >
                       {event.status}
                     </span>
                   </div>
                   <div className="text-sm text-gray-500">
-                    {event.attendees?.length || 0} Attendees
+                    {event.registeredParticipants.length} /{" "}
+                    {event.maxParticipants} Participants
+                  </div>
+
+                  {/* Display Participants */}
+                  {/* Display Participants */}
+                  <div className="mt-4">
+                    <h4 className="font-semibold text-gray-700">
+                      Participants:
+                    </h4>
+                    {event.registeredParticipants.length > 0 ? (
+                      <div className="overflow-x-auto border rounded-md mt-2">
+                        <table className="w-full border-collapse">
+                          <thead>
+                            <tr className="bg-gray-200 text-gray-700 text-sm">
+                              <th className="px-4 py-2 text-left">#</th>
+                              <th className="px-4 py-2 text-left">Name</th>
+                              <th className="px-4 py-2 text-left">Email</th>
+                              <th className="px-4 py-2 text-left">Phone</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {event.registeredParticipants.map(
+                              (participant, index) => (
+                                <tr
+                                  key={index}
+                                  className="border-t text-gray-600"
+                                >
+                                  <td className="px-4 py-2">{index + 1}</td>
+                                  <td className="px-4  capitalize py-2">
+                                    {participant.name}
+                                  </td>
+                                  <td className="px-4 py-2">
+                                    {participant.email}
+                                  </td>
+                                  <td className="px-4 py-2">
+                                    {participant.phone}
+                                  </td>
+                                </tr>
+                              )
+                            )}
+                          </tbody>
+                        </table>
+                      </div>
+                    ) : (
+                      <p className="text-gray-500 mt-2">
+                        No participants registered yet.
+                      </p>
+                    )}
                   </div>
                 </div>
               ))}
@@ -532,29 +599,26 @@ export default function SocietyDashboard() {
                   />
                 </div>
 
-                {/* <div className="space-y-2">
-                  <label htmlFor="status" className="text-sm font-medium">
-                    Status
+                <div className="space-y-2">
+                  <label
+                    htmlFor="maxParticipants"
+                    className="text-sm font-medium"
+                  >
+                    Maximum Participants
                   </label>
-                  <Select
-                    value={eventForm.status}
-                    onValueChange={(value) =>
+                  <Input
+                    id="maxParticipants"
+                    type="number"
+                    value={eventForm.maxParticipants}
+                    onChange={(e) =>
                       setEventForm((prev) => ({
                         ...prev,
-                        status: value as "upcoming" | "active" | "completed",
+                        maxParticipants: Number(e.target.value),
                       }))
                     }
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="upcoming">Upcoming</SelectItem>
-                      <SelectItem value="active">Active</SelectItem>
-                      <SelectItem value="completed">Completed</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div> */}
+                    required
+                  />
+                </div>
 
                 <div className="flex justify-end space-x-2">
                   <Button
