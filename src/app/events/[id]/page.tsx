@@ -1,124 +1,120 @@
-// src/app/events/page.tsx
 "use client";
+import { useEffect, useState } from "react";
+import { useParams, useRouter } from "next/navigation";
+import { doc, getDoc } from "firebase/firestore";
+import { db } from "@/firebase/config";
+import { QRCodeSVG } from "qrcode.react";
 
-import React, { useState, useEffect } from "react";
-import { Calendar, MapPin, Users, Search, Plus } from "lucide-react";
-import { useEvents } from "@/hooks/useEvents";
-
-export default function EventsPage() {
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedFilter, setSelectedFilter] = useState("all");
-  const { events, loading, error } = useEvents();
+const EventPage = () => {
+  const params = useParams();
+  const eventId = params.id as string;
+  const router = useRouter();
+  const [event, setEvent] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [registrationUrl, setRegistrationUrl] = useState("");
 
   useEffect(() => {
-    if (selectedFilter === "upcoming") {
-      // Filter upcoming events
-    } else if (selectedFilter === "past") {
-      // Filter past events
+    const fetchEvent = async () => {
+      try {
+        const eventRef = doc(db, "events", eventId);
+        const eventSnap = await getDoc(eventRef);
+        if (eventSnap.exists()) {
+          setEvent(eventSnap.data());
+        } else {
+          alert("Event not found!");
+          router.push("/");
+        }
+      } catch (error) {
+        console.error("Error fetching event:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchEvent();
+  }, [eventId, router]);
+
+  // Generate the registration URL with proper domain handling
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      // Get the base URL based on the environment
+      let baseUrl;
+
+      // Use window.location.host to get the domain:port without the protocol
+      // This works correctly in both development and production
+      baseUrl = `${window.location.protocol}//${window.location.host}`;
+
+      setRegistrationUrl(`${baseUrl}/events/${eventId}/register`);
     }
-  }, [selectedFilter]);
+  }, [eventId]);
 
-  return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold">Events</h1>
-        <button className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 flex items-center">
-          <Plus className="h-5 w-5 mr-2" />
-          Create Event
-        </button>
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-screen">
+        Loading...
       </div>
+    );
+  }
 
-      {/* Search and Filter Bar */}
-      <div className="bg-white p-4 rounded-lg shadow-md space-y-4">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
-          <input
-            type="text"
-            placeholder="Search events..."
-            className="w-full pl-10 pr-4 py-2 border rounded-md"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-        </div>
-        <div className="flex space-x-2">
-          {["all", "upcoming", "past"].map((filter) => (
-            <button
-              key={filter}
-              onClick={() => setSelectedFilter(filter)}
-              className={`px-4 py-2 rounded-md ${
-                selectedFilter === filter
-                  ? "bg-blue-100 text-blue-800"
-                  : "bg-gray-100 text-gray-800"
-              }`}
-            >
-              {filter.charAt(0).toUpperCase() + filter.slice(1)}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Events List */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {loading ? (
-          <p>Loading events...</p>
-        ) : error ? (
-          <p className="text-red-500">{error}</p>
-        ) : events.length > 0 ? (
-          events.map((event) => (
-            <div
-              key={event.id}
-              className="bg-white rounded-lg shadow-md overflow-hidden"
-            >
-              <div className="p-6">
-                <h3 className="text-xl font-semibold mb-2">{event.title}</h3>
-                <p className="text-gray-600 mb-4">{event.description}</p>
-
-                <div className="space-y-2 mb-4">
-                  <div className="flex items-center text-gray-600">
-                    <Calendar className="h-4 w-4 mr-2" />
-                    <span>{new Date(event.date).toLocaleDateString()}</span>
-                  </div>
-
-                  <div className="flex items-center text-gray-600">
-                    <MapPin className="h-4 w-4 mr-2" />
-                    <span>{event.venue}</span>
-                  </div>
-
-                  <div className="flex items-center text-gray-600">
-                    <Users className="h-4 w-4 mr-2" />
-                    <span>
-                      {event.registeredParticipants} / {event.maxParticipants}{" "}
-                      registered
-                    </span>
-                  </div>
-                </div>
-
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-500">
-                    By {event.society}
-                  </span>
-                  <button
-                    className={`px-4 py-2 rounded-md ${
-                      event.registeredParticipants >= event.maxParticipants
-                        ? "bg-gray-100 text-gray-500 cursor-not-allowed"
-                        : "bg-blue-600 text-white hover:bg-blue-700"
-                    }`}
-                    disabled={
-                      event.registeredParticipants >= event.maxParticipants
-                    }
-                  >
-                    {event.registeredParticipants >= event.maxParticipants
-                      ? "Fully Booked"
-                      : "Register Now"}
-                  </button>
-                </div>
-              </div>
-            </div>
-          ))
-        ) : (
-          <p className="text-gray-500">No events found</p>
+  return event ? (
+    <div className="max-w-lg mx-auto p-6 border rounded-lg shadow-md bg-white">
+      <h1 className="text-2xl font-bold mb-4">{event.title}</h1>
+      <p className="mb-4">{event.description}</p>
+      <div className="bg-gray-50 p-4 rounded-lg mb-4">
+        <p className="mb-2">
+          <strong>Date:</strong>{" "}
+          {new Date(event.date.seconds * 1000).toLocaleString()}
+        </p>
+        <p className="mb-2">
+          <strong>Venue:</strong> {event.venue}
+        </p>
+        {event.maxParticipants && (
+          <p>
+            <strong>Capacity:</strong>{" "}
+            {event.registeredParticipants?.length || 0}/{event.maxParticipants}
+          </p>
+        )}
+        {event.type && (
+          <p>
+            <strong>Type:</strong> {event.type}
+          </p>
+        )}
+        {event.status && (
+          <p>
+            <strong>Status:</strong> {event.status}
+          </p>
         )}
       </div>
+
+      {/* QR Code for Registration */}
+      <div className="mt-6 mb-6 flex flex-col items-center">
+        <h3 className="text-lg font-semibold mb-2">Scan QR to Register</h3>
+        <div
+          className="border p-3 bg-white rounded inline-block"
+          style={{ textDecoration: "none" }}
+        >
+          {registrationUrl && (
+            <QRCodeSVG
+              value={registrationUrl}
+              size={200}
+              level={"H"}
+              includeMargin={true}
+            />
+          )}
+        </div>
+        <p className="text-xs text-gray-500 mt-2">{registrationUrl}</p>
+      </div>
+
+      {/* Manual Registration Button */}
+      <button
+        className="mt-4 w-full p-2 bg-blue-500 hover:bg-blue-600 text-white rounded transition-colors"
+        onClick={() => router.push(`/events/${eventId}/register`)}
+      >
+        Register Manually
+      </button>
     </div>
+  ) : (
+    <p>Event not found</p>
   );
-}
+};
+
+export default EventPage;

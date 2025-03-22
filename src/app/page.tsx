@@ -59,9 +59,9 @@ export default function LandingPage() {
       return eventDate > now;
     }) || [];
 
-  const handleSignUp = () => {
-    router.push("/auth/register");
-  };
+  // const handleSignUp = () => {
+  //   router.push("/auth/register");
+  // };
 
   const handleLogin = () => {
     router.push("/auth/login");
@@ -209,14 +209,14 @@ export default function LandingPage() {
           >
             Login
           </Button>
-          <Button
+          {/* <Button
             variant="outline"
             size="lg"
             className="bg-gray-300 text-gray-800"
             onClick={handleSignUp}
           >
             Sign Up
-          </Button>
+          </Button> */}
         </div>
       </section>
     </div>
