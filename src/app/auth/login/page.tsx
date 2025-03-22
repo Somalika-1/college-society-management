@@ -34,11 +34,9 @@ export default function LoginPage() {
       console.log("Redirecting to:", redirectPath);
       window.location.href = redirectPath;
       router.push(redirectPath);
-    } catch (err: any) {
+    } catch (err) {
       console.error("Login error:", err);
-      setError(
-        err.message || "Failed to login. Please check your credentials."
-      );
+      setError(error || "Failed to login. Please check your credentials.");
     } finally {
       setIsLoading(false);
     }

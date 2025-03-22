@@ -11,11 +11,7 @@ export default function AnnouncementsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedSociety, setSelectedSociety] = useState("all");
   const { user } = useAuth();
-  const {
-    societies,
-    loading: societiesLoading,
-    error: societiesError,
-  } = useSocieties();
+  const { societies, loading: societiesLoading } = useSocieties();
 
   const {
     announcements,

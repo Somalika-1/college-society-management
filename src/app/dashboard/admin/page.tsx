@@ -13,7 +13,6 @@ import {
 } from "lucide-react";
 import {
   collection,
-  query,
   getDocs,
   getFirestore,
   doc,
@@ -142,7 +141,7 @@ interface AnnouncementForm {
 
 export default function AdminDashboard() {
   const { user, loading } = useAuth();
-  const router = useRouter();
+  // const router = useRouter();
   const db = getFirestore(app);
 
   // States
@@ -311,35 +310,35 @@ export default function AdminDashboard() {
   };
 
   // Add function to assign/change society head
-  const assignSocietyHead = async (societyId: string, userId: string) => {
-    try {
-      // Get the current society data
-      const societyDoc = await getDoc(doc(db, "societies", societyId));
-      const society = societyDoc.data() as Society;
+  // const assignSocietyHead = async (societyId: string, userId: string) => {
+  //   try {
+  //     // Get the current society data
+  //     const societyDoc = await getDoc(doc(db, "societies", societyId));
+  //     const society = societyDoc.data() as Society;
 
-      // If there was a previous head, update their role
-      if (society.headId) {
-        await updateDoc(doc(db, "users", society.headId), {
-          role: "member",
-        });
-      }
+  //     // If there was a previous head, update their role
+  //     if (society.headId) {
+  //       await updateDoc(doc(db, "users", society.headId), {
+  //         role: "member",
+  //       });
+  //     }
 
-      // Update the new head
-      await updateDoc(doc(db, "users", userId), {
-        role: "society_head",
-        societyId: societyId,
-      });
+  //     // Update the new head
+  //     await updateDoc(doc(db, "users", userId), {
+  //       role: "society_head",
+  //       societyId: societyId,
+  //     });
 
-      // Update the society
-      await updateDoc(doc(db, "societies", societyId), {
-        headId: userId,
-      });
+  //     // Update the society
+  //     await updateDoc(doc(db, "societies", societyId), {
+  //       headId: userId,
+  //     });
 
-      await fetchData();
-    } catch (err) {
-      setError("Failed to assign society head");
-    }
-  };
+  //     await fetchData();
+  //   } catch (err) {
+  //     setError("Failed to assign society head");
+  //   }
+  // };
 
   const handleUserSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();

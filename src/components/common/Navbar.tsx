@@ -3,7 +3,7 @@ import React, { useState } from "react";
 import { Menu, X } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useRouter } from "next/navigation";
-
+import Link from "next/link";
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const { user, logout } = useAuth();
@@ -24,21 +24,27 @@ export default function Navbar() {
 
           {/* Desktop Menu */}
           <div className="hidden md:flex items-center space-x-4">
-            <a href="/dashboard" className="text-gray-700 hover:text-blue-600">
+            <Link
+              href="/dashboard"
+              className="text-gray-700 hover:text-blue-600"
+            >
               Dashboard
-            </a>
-            <a href="/societies" className="text-gray-700 hover:text-blue-600">
+            </Link>
+            <Link
+              href="/societies"
+              className="text-gray-700 hover:text-blue-600"
+            >
               Societies
-            </a>
-            <a href="/events" className="text-gray-700 hover:text-blue-600">
+            </Link>
+            <Link href="/events" className="text-gray-700 hover:text-blue-600">
               Events
-            </a>
-            <a
+            </Link>
+            <Link
               href="/announcements"
               className="text-gray-700 hover:text-blue-600"
             >
               Announcements
-            </a>
+            </Link>
 
             {user ? (
               <div className="flex items-center space-x-4">
@@ -51,12 +57,12 @@ export default function Navbar() {
                 </button>
               </div>
             ) : (
-              <a
+              <Link
                 href="/auth/login"
                 className="text-gray-700 hover:text-blue-600"
               >
                 Login
-              </a>
+              </Link>
             )}
           </div>
 
@@ -76,30 +82,30 @@ export default function Navbar() {
       {/* Mobile Menu */}
       {isOpen && (
         <div className="md:hidden px-2 pt-2 pb-3 space-y-1">
-          <a
+          <Link
             href="/dashboard"
             className="block px-3 py-2 text-gray-700 hover:bg-gray-100 rounded-md"
           >
             Dashboard
-          </a>
-          <a
+          </Link>
+          <Link
             href="/societies"
             className="block px-3 py-2 text-gray-700 hover:bg-gray-100 rounded-md"
           >
             Societies
-          </a>
-          <a
+          </Link>
+          <Link
             href="/events"
             className="block px-3 py-2 text-gray-700 hover:bg-gray-100 rounded-md"
           >
             Events
-          </a>
-          <a
+          </Link>
+          <Link
             href="/announcements"
             className="block px-3 py-2 text-gray-700 hover:bg-gray-100 rounded-md"
           >
             Announcements
-          </a>
+          </Link>
 
           {user ? (
             <>
@@ -114,12 +120,12 @@ export default function Navbar() {
               </button>
             </>
           ) : (
-            <a
+            <Link
               href="/auth/login"
               className="block px-3 py-2 text-gray-700 hover:bg-gray-100 rounded-md"
             >
               Login
-            </a>
+            </Link>
           )}
         </div>
       )}

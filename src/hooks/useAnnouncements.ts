@@ -75,12 +75,28 @@ export function useAnnouncements() {
     }
   };
 
+  async function refreshAnnouncements() {
+    setLoading(true);
+    try {
+      // Fetch announcements from the API
+      const response = await fetch("/api/announcements");
+      const data = await response.json();
+      setAnnouncements(data);
+      setError(null);
+    } catch (err) {
+      setError("Failed to refresh announcements");
+    } finally {
+      setLoading(false);
+    }
+  }
+
   return {
     announcements,
     loading,
     error,
     addAnnouncement,
     removeAnnouncement,
+    refreshAnnouncements
   };
 }
 // [FILEPATH] src/hooks/useAnnouncements.ts [/FILEPATH]
