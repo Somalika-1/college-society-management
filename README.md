@@ -26,11 +26,14 @@ Campus Connect is a web-based platform developed to streamline and digitize the 
 ```bash
 git clone https://github.com/yourusername/campus-connect.git
 cd campus-connect
+```
 
 2. Install Dependencies
+ ```bash
 npm install
+```
 
-3. Configure Firebase
+4. Configure Firebase
 
 Create a Firebase project at firebase.google.com
 
@@ -39,7 +42,9 @@ Enable Firestore and Authentication (Email/Password or Google)
 Replace your Firebase config in src/services/firebase.js
 
 4. Start the Development Server
+```bash
 npm start
+```
 
 
 🧪 Future Enhancements
