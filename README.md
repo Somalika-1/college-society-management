@@ -9,7 +9,6 @@ Campus Connect is a web-based platform developed to streamline and digitize the 
 - 📢 **Announcements**: Publish and notify members about important updates and news.
 - 🧾 **User Registration & Authentication**: Firebase-based secure login for students and admins.
 - 👥 **Role-based Access**: Admins, society heads, and members have different access levels.
-- 📂 **Document Repository**: Upload and manage files related to events or society work.
 - 🔎 **Search & Filter**: Users can browse societies and events based on interest, date, or category.
 
 
