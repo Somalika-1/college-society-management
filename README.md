@@ -1,36 +1,53 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🎓 Campus Connect – College Society Management System
 
-## Getting Started
+Campus Connect is a web-based platform developed to streamline and digitize the functioning of college societies. The system allows student organizers and society members to manage events, announcements, registrations, and internal communication with ease. It is designed to improve engagement, transparency, and efficiency in society management.
 
-First, run the development server:
+## 🚀 Features
 
+- 🏛️ **Society Dashboard**: Individual dashboards for each registered society with member roles and privileges.
+- 📅 **Event Management**: Create, update, and delete events with detailed information and registration options.
+- 📢 **Announcements**: Publish and notify members about important updates and news.
+- 🧾 **User Registration & Authentication**: Firebase-based secure login for students and admins.
+- 👥 **Role-based Access**: Admins, society heads, and members have different access levels.
+- 📂 **Document Repository**: Upload and manage files related to events or society work.
+- 🔎 **Search & Filter**: Users can browse societies and events based on interest, date, or category.
+
+
+## 🧰 Tech Stack
+
+- **Frontend**: React.js, Tailwind CSS
+- **Backend & Authentication**: Firebase (Firestore, Firebase Auth)
+- **Hosting**: Firebase Hosting or Vercel (optional)
+- **Database**: Cloud Firestore – NoSQL
+
+- ## 🧑‍💻 How to Run Locally
+
+1. **Clone the Repository**
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+git clone https://github.com/yourusername/campus-connect.git
+cd campus-connect
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+2. Install Dependencies
+npm install
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+3. Configure Firebase
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Create a Firebase project at firebase.google.com
 
-## Learn More
+Enable Firestore and Authentication (Email/Password or Google)
 
-To learn more about Next.js, take a look at the following resources:
+Replace your Firebase config in src/services/firebase.js
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+4. Start the Development Server
+npm start
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
 
-## Deploy on Vercel
+🧪 Future Enhancements
+Email notifications and reminders
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Real-time chat among society members
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Event feedback and rating system
+
+Admin panel for college authority
+
