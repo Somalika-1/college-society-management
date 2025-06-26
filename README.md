@@ -28,12 +28,12 @@ git clone https://github.com/yourusername/campus-connect.git
 cd campus-connect
 ```
 
-2. Install Dependencies
+2. **Install Dependencies**
  ```bash
 npm install
 ```
 
-4. Configure Firebase
+4. **Configure Firebase**
 
 Create a Firebase project at firebase.google.com
 
@@ -41,13 +41,14 @@ Enable Firestore and Authentication (Email/Password or Google)
 
 Replace your Firebase config in src/services/firebase.js
 
-4. Start the Development Server
+5. **Start the Development Server**
 ```bash
 npm start
 ```
 
 
-🧪 Future Enhancements
+🧪 **Future Enhancements**
+
 Email notifications and reminders
 
 Real-time chat among society members
